@@ -82,9 +82,9 @@ export function Tower() {
   const isPropInner = config.baseType === 'propInner';
 
   // Joist positions along z (on top of the bearers).
-  const joistCount = 7;
+  const joistCount = 9;
   const joistZs = Array.from({ length: joistCount }, (_, i) =>
-    DIMS.bearerSpan * 0.94 * (i / (joistCount - 1) - 0.5),
+    DIMS.bearerSpan * 0.95 * (i / (joistCount - 1) - 0.5),
   );
 
   return (
@@ -102,13 +102,25 @@ export function Tower() {
           cross-braces BETWEEN them on each side — the real shoring-frame "X" */}
       {layout.frames.map((f) => (
         <group key={f.index}>
-          <HFrame bottom={f.bottom} height={f.height} z={-hz} />
-          <HFrame bottom={f.bottom} height={f.height} z={hz} />
+          <HFrame bottom={f.bottom} height={f.height} z={-hz} size={f.size} />
+          <HFrame bottom={f.bottom} height={f.height} z={hz} size={f.size} />
           {[-hx, hx].map((x) => (
             <group key={x}>
-              <Tube from={[x, f.bottom + 0.06, -hz]} to={[x, f.top - 0.06, hz]} radius={DIMS.crossBraceRadius} />
-              <Tube from={[x, f.top - 0.06, -hz]} to={[x, f.bottom + 0.06, hz]} radius={DIMS.crossBraceRadius} />
+              <Tube from={[x, f.bottom + 0.07, -hz]} to={[x, f.top - 0.07, hz]} radius={DIMS.crossBraceRadius} />
+              <Tube from={[x, f.top - 0.07, -hz]} to={[x, f.bottom + 0.07, hz]} radius={DIMS.crossBraceRadius} />
             </group>
+          ))}
+        </group>
+      ))}
+
+      {/* coupling collars where stacked frames join — makes 2/3-frame stacks read clearly */}
+      {layout.frames.slice(1).map((f) => (
+        <group key={`join-${f.index}`}>
+          {COLUMNS.map(([x, z], ci) => (
+            <mesh key={ci} position={[x, f.bottom, z]} castShadow>
+              <cylinderGeometry args={[DIMS.legRadius * 1.45, DIMS.legRadius * 1.45, 0.085, 18]} />
+              <meshStandardMaterial color="#9aa0a8" metalness={0.7} roughness={0.45} />
+            </mesh>
           ))}
         </group>
       ))}

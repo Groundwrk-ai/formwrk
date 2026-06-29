@@ -144,3 +144,10 @@ export const useFormworkStore = create<FormworkState>((set, get) => ({
     if (next) get().setConfig(next);
   },
 }));
+
+// Dev-only hook for previewing arbitrary configs (e.g. short-frame triples that
+// auto-assemble never selects). Tree-shaken out of production builds.
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  (window as unknown as { __fw: unknown; __cfg: unknown }).__fw = useFormworkStore;
+  (window as unknown as { __fw: unknown; __cfg: unknown }).__cfg = CONFIG_BY_ID;
+}

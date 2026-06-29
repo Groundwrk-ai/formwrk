@@ -19,8 +19,8 @@ function CameraRig({ controlsRef }: { controlsRef: RefObject<any> }) {
   useEffect(() => {
     const topM = useFormworkStore.getState().currentHeight / 1000;
     const midY = topM / 2;
-    const dist = Math.max(3.5, topM * 1.5);
-    camera.position.set(dist * 0.75, midY + topM * 0.35, dist);
+    const dist = Math.max(4.4, topM * 1.45);
+    camera.position.set(dist * 0.8, midY + topM * 0.3 + 0.6, dist);
     camera.lookAt(0, midY, 0);
     const c = controlsRef.current;
     if (c) {

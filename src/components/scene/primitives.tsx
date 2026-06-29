@@ -22,20 +22,20 @@ export const COLORS = {
 
 /** Common dimensions (metres). */
 export const DIMS = {
-  legSpacing: 0.6, // leg-to-leg within one ladder frame (x)
-  frameDepth: 0.5, // front ladder to back ladder (z)
+  legSpacing: 1.15, // leg-to-leg within one ladder frame (x) — real frames are wide
+  frameDepth: 1.15, // front ladder to back ladder (z) — roughly square bay
   legRadius: 0.03, // ~60mm OD leg
-  braceRadius: 0.02,
-  crossBraceRadius: 0.016,
+  braceRadius: 0.021,
+  crossBraceRadius: 0.024,
   rocketRadius: 0.026,
-  rodRadius: 0.018,
-  collarRadius: 0.032,
+  rodRadius: 0.02,
+  collarRadius: 0.034,
   collarHeight: 0.04,
-  plate: 0.2, // flat jack base plate side
+  plate: 0.22, // flat jack base plate side
   plateThickness: 0.016,
-  bearerSpan: 0.92, // z length of a bearer
+  bearerSpan: 1.55, // z length of a bearer (spans the bay + overhang)
   bearerWidth: 0.077, // x width of a bearer (LVL 150x77 on edge)
-  joistSpan: 1.15, // x length of a joist
+  joistSpan: 1.55, // x length of a joist
   joistWidth: 0.065, // z width of a joist (LVL 95x65)
 } as const;
 
