@@ -12,11 +12,11 @@ export const COLORS = {
   warn: '#d9973a',
   textPrimary: '#e8eaed',
   textSecondary: '#8b95a1',
-  metal: '#c9ced6',
+  metal: '#cdd3db',
   collar: '#1a6fc4',
-  bearer: '#8b5e3c',
-  joist: '#a0713a',
-  ply: '#d4b483',
+  bearer: '#9c6b42',
+  joist: '#b27c47',
+  ply: '#dcbd8c',
   ground: '#202329',
 } as const;
 
@@ -53,9 +53,9 @@ export function Tube({
   to,
   radius,
   color = COLORS.metal,
-  metalness = 0.75,
-  roughness = 0.35,
-  radialSegments = 12,
+  metalness = 0.9,
+  roughness = 0.32,
+  radialSegments = 14,
 }: {
   from: Vec3;
   to: Vec3;

@@ -1,7 +1,8 @@
-/** R3F Canvas wrapper: camera, lighting, controls, ground + tower. */
+/** R3F Canvas wrapper: camera, lighting, reflections, soft shadows, ground + tower. */
 import { useEffect, useRef, type RefObject } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Environment, Lightformer, ContactShadows } from '@react-three/drei';
+import * as THREE from 'three';
 import { Ground } from './Ground';
 import { Tower } from './Tower';
 import { COLORS } from './primitives';
@@ -37,28 +38,37 @@ export function FrameScene() {
 
   return (
     <Canvas
-      shadows
       dpr={[1, 2]}
-      camera={{ position: [3, 2.4, 4], fov: 45, near: 0.1, far: 100 }}
+      camera={{ position: [4, 3, 5], fov: 45, near: 0.1, far: 100 }}
+      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
       style={{ background: COLORS.bg, position: 'absolute', inset: 0 }}
     >
-      <ambientLight intensity={0.4} />
-      <directionalLight
-        position={[5, 10, 5]}
-        intensity={1.2}
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-left={-6}
-        shadow-camera-right={6}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-2}
-        shadow-bias={-0.0004}
-      />
-      <directionalLight position={[-3, 5, -3]} intensity={0.4} />
+      <ambientLight intensity={0.32} />
+      <directionalLight position={[5, 10, 5]} intensity={1.0} />
+      <directionalLight position={[-4, 5, -3]} intensity={0.3} />
+
+      {/* Image-based lighting for metallic reflections — self-contained Lightformers,
+          no HDR download. Gives the galvanised steel its highlights. */}
+      <Environment resolution={256}>
+        <Lightformer intensity={2.4} form="rect" position={[0, 6, 3]} scale={[10, 4, 1]} target={[0, 1, 0]} />
+        <Lightformer intensity={1.1} form="rect" position={[6, 3, 4]} scale={[3, 7, 1]} target={[0, 1, 0]} />
+        <Lightformer intensity={0.8} form="rect" position={[-6, 3, -3]} scale={[3, 7, 1]} target={[0, 1, 0]} />
+        <Lightformer intensity={0.5} form="ring" color="#6bb0ee" position={[-4, 2, 6]} scale={2.5} target={[0, 1, 0]} />
+      </Environment>
 
       <Ground />
       <Tower />
+
+      {/* Soft contact shadow grounds the tower without harsh edges. */}
+      <ContactShadows
+        position={[0, 0.014, 0]}
+        scale={7}
+        far={6}
+        blur={2.6}
+        opacity={0.55}
+        resolution={1024}
+        color="#04060a"
+      />
 
       <OrbitControls
         ref={controlsRef}
