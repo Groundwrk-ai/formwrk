@@ -29,6 +29,47 @@ const THREAD_PITCH = 0.013; // metres per thread band
 
 const ROD_COLOR = '#aeb4bc';
 const NUT_COLOR = '#c4cad2';
+const EXT_COLOR = '#8b9097'; // matte gray — visually distinct from the shiny frame tubes
+
+/**
+ * Frame-leg extension tube: a narrower upper tube with a wider socket at the
+ * bottom that slots down over the top of the frame leg. Matte gray finish.
+ */
+export function Extension({
+  x,
+  z,
+  bottom,
+  top,
+  legRadius,
+}: {
+  x: number;
+  z: number;
+  bottom: number;
+  top: number;
+  legRadius: number;
+}) {
+  const span = Math.max(top - bottom, 0.001);
+  const socketH = Math.min(0.17, span * 0.5);
+  const overlap = 0.08; // how far the socket slots down over the leg
+  const socketBottom = bottom - overlap;
+  const socketTop = bottom + socketH;
+  const upperBottom = socketTop;
+
+  return (
+    <group>
+      {/* upper tube */}
+      <mesh position={[x, (upperBottom + top) / 2, z]} castShadow>
+        <cylinderGeometry args={[legRadius * 0.92, legRadius * 0.92, Math.max(top - upperBottom, 0.001), 16]} />
+        <meshStandardMaterial color={EXT_COLOR} metalness={0.35} roughness={0.72} />
+      </mesh>
+      {/* wider lower socket that slots over the frame leg */}
+      <mesh position={[x, (socketBottom + socketTop) / 2, z]} castShadow>
+        <cylinderGeometry args={[legRadius * 1.32, legRadius * 1.32, socketTop - socketBottom, 18]} />
+        <meshStandardMaterial color={EXT_COLOR} metalness={0.35} roughness={0.72} />
+      </mesh>
+    </group>
+  );
+}
 
 /** A threaded, matte galvanised rod between two heights. */
 export function ThreadedRod({

@@ -12,7 +12,7 @@ import { computeLayout, type Segment } from '../../logic/layout';
 import { HFrame } from './HFrame';
 import { Tube, Box, DIMS, COLORS } from './primitives';
 import { useVerticalDrag, type VerticalDragHandlers } from './useVerticalDrag';
-import { ThreadedRod, WingNut, PinnedTube, Pin } from './jackParts';
+import { ThreadedRod, WingNut, PinnedTube, Pin, Extension } from './jackParts';
 
 /** Invisible but raycastable cylinder that captures the screwjack drag. */
 function GrabHandle({
@@ -140,7 +140,7 @@ export function Tower() {
       {COLUMNS.map(([x, z], ci) => (
         <group key={ci}>
           {isPropInner ? <PropInner seg={layout.base} x={x} z={z} drag={baseDrag} /> : <FlatJack seg={layout.base} x={x} z={z} drag={baseDrag} />}
-          {layout.rocket && <Tube from={[x, layout.rocket.bottom, z]} to={[x, layout.rocket.top, z]} radius={DIMS.rocketRadius} />}
+          {layout.rocket && <Extension x={x} z={z} bottom={layout.rocket.bottom} top={layout.rocket.top} legRadius={DIMS.legRadius} />}
           <UHead seg={layout.uHead} x={x} z={z} drag={uHeadDrag} />
         </group>
       ))}
