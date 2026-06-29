@@ -173,8 +173,18 @@ describe('simplest valid config (auto-assemble)', () => {
   it('3000mm thick -> 7ft Flat Jack (6ft thick maxes at 2847, so 7ft no-ext is simplest)', () => {
     expect(simplestValidConfig(3000, THICK)?.id).toBe('s-7ft-fj');
   });
-  it('5000mm thin -> 6ft+7ft double (no single reaches; fewest frames, smallest total)', () => {
+  it('5000mm thin -> 6ft+7ft double (no single reaches; smallest valid double)', () => {
     expect(simplestValidConfig(5000, THIN)?.id).toBe('d-6-7');
+  });
+  it('4100mm thin -> double 5+6 (a double beats a single needing extension + prop inner)', () => {
+    const c = simplestValidConfig(4100, THIN);
+    expect(c?.id).toBe('d-5-6');
+    expect(c?.frames.length).toBe(2);
+  });
+  it('a single with extension + prop inner is never optimal when a double is valid', () => {
+    // At 4100mm, 6ft+500 Prop Inner (single, ext + PI) IS valid but must not be chosen.
+    expect(isConfigValidForInputs(CONFIG_BY_ID['s-6ft-500-pi'], 4100, THIN)).toBe(true);
+    expect(simplestValidConfig(4100, THIN)?.id).not.toBe('s-6ft-500-pi');
   });
   it('returns null below the smallest min', () => {
     expect(simplestValidConfig(500, THIN)).toBeNull();

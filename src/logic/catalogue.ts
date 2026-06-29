@@ -21,25 +21,34 @@ export function validConfigsForInputs(slabHeight: number, slabThickness: number)
 }
 
 /**
- * Simplicity class rank, per sheet note 84:
- *   FJ no-ext (0) → FJ + ext (1) → PI no-ext (2) → PI + ext (3).
+ * Archetype preference rank (lower = preferred). Agreed ordering:
+ *   0  Single (Flat Jack, no extension)
+ *   1  Single + extension (Flat Jack)
+ *   2  Single + Prop Inner (no extension)
+ *   3  Double
+ *   4  Single + extension + Prop Inner   (least-preferred single — a double beats it)
+ *   5  Triple
+ * Note: a double is preferred over a single that needs BOTH an extension and a
+ * prop inner; triples are the last resort.
  */
-function classRank(c: FrameConfig): number {
+function archetypeRank(c: FrameConfig): number {
+  const n = c.frames.length;
+  if (n === 2) return 3;
+  if (n >= 3) return 5;
   const hasExt = c.rocket !== 'none';
-  return c.baseType === 'flatJack' ? (hasExt ? 1 : 0) : hasExt ? 3 : 2;
+  if (c.baseType === 'flatJack') return hasExt ? 1 : 0;
+  return hasExt ? 4 : 2;
 }
 
 /**
- * Total ordering for "simplest" (lower = simpler):
- *   1) fewest frames (single < double < triple)
- *   2) class rank (FJ no-ext < FJ+ext < PI no-ext < PI+ext)
- *   3) smaller frames first (by total frame height)
- *   4) id, as a stable final tie-break
+ * Total ordering for "simplest / optimal" (lower = simpler):
+ *   1) archetype rank (above)
+ *   2) smaller frames first (by total frame height)
+ *   3) id, as a stable final tie-break
  */
 export function compareSimplicity(a: FrameConfig, b: FrameConfig): number {
   return (
-    a.frames.length - b.frames.length ||
-    classRank(a) - classRank(b) ||
+    archetypeRank(a) - archetypeRank(b) ||
     framesTotal(a.frames) - framesTotal(b.frames) ||
     a.id.localeCompare(b.id)
   );
