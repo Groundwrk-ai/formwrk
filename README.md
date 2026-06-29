@@ -41,11 +41,13 @@ npm run build    # type-check + production build to dist/
 | Phase | Scope | State |
 |-------|-------|-------|
 | 1 | Logic engine (pure TS) + tests | ✅ complete — 66 tests green |
-| 2 | Static 3D scene | ⬜ next |
-| 3 | Screwjack drag | ⬜ |
-| 4 | Component palette (snap-to-catalogue) | ⬜ |
-| 5 | Assembly animation | ⬜ |
-| 6 | Polish + height display | ⬜ |
+| 2 | Static 3D scene (realistic components) | ✅ complete |
+| 3 | Screwjack drag + touch steppers | ✅ complete |
+| 4 | Optimal / Other config picker | ✅ complete |
+| 6 | Visual polish (reflections, soft shadows, materials) | ✅ done |
+| — | Height-range display | ✅ done |
+| 5 | Assembly animation (GSAP) | ⬜ remaining |
+| — | Component labels / final touches | ⬜ optional |
 
 ## Project structure
 
