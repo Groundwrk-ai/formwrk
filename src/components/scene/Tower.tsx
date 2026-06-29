@@ -11,6 +11,31 @@ import { useFormworkStore } from '../../store/formworkStore';
 import { computeLayout, type Segment } from '../../logic/layout';
 import { HFrame } from './HFrame';
 import { Tube, Box, DIMS, COLORS } from './primitives';
+import { useVerticalDrag, type VerticalDragHandlers } from './useVerticalDrag';
+
+/** Invisible but raycastable cylinder that captures the screwjack drag. */
+function GrabHandle({
+  x,
+  z,
+  yCenter,
+  height,
+  radius,
+  drag,
+}: {
+  x: number;
+  z: number;
+  yCenter: number;
+  height: number;
+  radius: number;
+  drag: VerticalDragHandlers;
+}) {
+  return (
+    <mesh position={[x, yCenter, z]} {...drag}>
+      <cylinderGeometry args={[radius, radius, height, 10]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+    </mesh>
+  );
+}
 
 const hx = DIMS.legSpacing / 2;
 const hz = DIMS.frameDepth / 2;
@@ -22,7 +47,8 @@ const COLUMNS: Array<[number, number]> = [
   [hx, hz],
 ];
 
-function FlatJack({ seg, x, z }: { seg: Segment; x: number; z: number }) {
+function FlatJack({ seg, x, z, drag }: { seg: Segment; x: number; z: number; drag: VerticalDragHandlers }) {
+  const grabH = Math.max(seg.height, 0.16) + 0.06;
   return (
     <group>
       <Box position={[x, seg.bottom + DIMS.plateThickness / 2, z]} size={[DIMS.plate, DIMS.plateThickness, DIMS.plate]} color={COLORS.metal} metalness={0.7} roughness={0.4} />
@@ -31,13 +57,15 @@ function FlatJack({ seg, x, z }: { seg: Segment; x: number; z: number }) {
         <cylinderGeometry args={[DIMS.collarRadius, DIMS.collarRadius, DIMS.collarHeight, 16]} />
         <meshStandardMaterial color={COLORS.collar} metalness={0.5} roughness={0.4} />
       </mesh>
+      <GrabHandle x={x} z={z} yCenter={seg.bottom + grabH / 2} height={grabH} radius={0.075} drag={drag} />
     </group>
   );
 }
 
-function PropInner({ seg, x, z }: { seg: Segment; x: number; z: number }) {
+function PropInner({ seg, x, z, drag }: { seg: Segment; x: number; z: number; drag: VerticalDragHandlers }) {
   // Telescoping inner tube: a wider outer sleeve over the lower portion + inner rod.
   const sleeveTop = seg.bottom + seg.height * 0.45;
+  const grabH = Math.max(seg.height, 0.16) + 0.06;
   return (
     <group>
       <Box position={[x, seg.bottom + DIMS.plateThickness / 2, z]} size={[DIMS.plate, DIMS.plateThickness, DIMS.plate]} color={COLORS.metal} metalness={0.7} roughness={0.4} />
@@ -47,14 +75,16 @@ function PropInner({ seg, x, z }: { seg: Segment; x: number; z: number }) {
         <cylinderGeometry args={[DIMS.collarRadius, DIMS.collarRadius, DIMS.collarHeight, 16]} />
         <meshStandardMaterial color={COLORS.collar} metalness={0.5} roughness={0.4} />
       </mesh>
+      <GrabHandle x={x} z={z} yCenter={seg.bottom + grabH / 2} height={grabH} radius={0.075} drag={drag} />
     </group>
   );
 }
 
-function UHead({ seg, x, z }: { seg: Segment; x: number; z: number }) {
+function UHead({ seg, x, z, drag }: { seg: Segment; x: number; z: number; drag: VerticalDragHandlers }) {
   const forkY = seg.top;
   const prongH = 0.13;
   const off = DIMS.bearerWidth / 2 + 0.018; // prongs sit just outside the bearer
+  const grabH = Math.max(seg.height, 0.2) + 0.18;
   return (
     <group>
       <Tube from={[x, seg.bottom, z]} to={[x, forkY, z]} radius={DIMS.rodRadius} />
@@ -63,6 +93,7 @@ function UHead({ seg, x, z }: { seg: Segment; x: number; z: number }) {
       {/* two upright prongs cradling the bearer (bearer width runs along x) */}
       <Box position={[x - off, forkY + prongH / 2, z]} size={[0.02, prongH, 0.1]} color={COLORS.metal} metalness={0.7} roughness={0.35} />
       <Box position={[x + off, forkY + prongH / 2, z]} size={[0.02, prongH, 0.1]} color={COLORS.metal} metalness={0.7} roughness={0.35} />
+      <GrabHandle x={x} z={z} yCenter={forkY - grabH / 2 + 0.12} height={grabH} radius={0.085} drag={drag} />
     </group>
   );
 }
@@ -73,6 +104,22 @@ export function Tower() {
   const baseExtension = useFormworkStore((s) => s.baseExtension);
   const slabHeight = useFormworkStore((s) => s.slabHeight);
   const meetsTarget = useFormworkStore((s) => s.meetsTarget);
+  const range = useFormworkStore((s) => s.range);
+  const setUHeadExtension = useFormworkStore((s) => s.setUHeadExtension);
+  const setBaseExtension = useFormworkStore((s) => s.setBaseExtension);
+
+  const uHeadDrag = useVerticalDrag({
+    getStart: () => useFormworkStore.getState().uHeadExtension,
+    setValue: setUHeadExtension,
+    min: range.uHeadMin,
+    max: range.uHeadMax,
+  });
+  const baseDrag = useVerticalDrag({
+    getStart: () => useFormworkStore.getState().baseExtension,
+    setValue: setBaseExtension,
+    min: range.baseMin,
+    max: range.baseMax,
+  });
 
   const layout = useMemo(
     () => computeLayout({ config, uHeadExtension, baseExtension, slabHeight }),
@@ -92,9 +139,9 @@ export function Tower() {
       {/* base jacks + frame stacks + rockets + U-heads, per column */}
       {COLUMNS.map(([x, z], ci) => (
         <group key={ci}>
-          {isPropInner ? <PropInner seg={layout.base} x={x} z={z} /> : <FlatJack seg={layout.base} x={x} z={z} />}
+          {isPropInner ? <PropInner seg={layout.base} x={x} z={z} drag={baseDrag} /> : <FlatJack seg={layout.base} x={x} z={z} drag={baseDrag} />}
           {layout.rocket && <Tube from={[x, layout.rocket.bottom, z]} to={[x, layout.rocket.top, z]} radius={DIMS.rocketRadius} />}
-          <UHead seg={layout.uHead} x={x} z={z} />
+          <UHead seg={layout.uHead} x={x} z={z} drag={uHeadDrag} />
         </group>
       ))}
 

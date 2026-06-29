@@ -16,6 +16,7 @@ export interface BomItem {
   qty?: number; // "off" count for the bay, where well-defined
   detail?: string; // size / live extension text
   live?: boolean; // value changes as a screwjack is dragged
+  control?: 'uHead' | 'base'; // renders an inline extension stepper
 }
 
 export interface BomSection {
@@ -33,12 +34,7 @@ const FT_LABEL: Record<string, string> = {
 
 const mm = (v: number) => `${Math.round(v)} mm`;
 
-export function buildBom(
-  config: FrameConfig,
-  uHeadExtension: number,
-  baseExtension: number,
-  range: HeightRange,
-): BomSection[] {
+export function buildBom(config: FrameConfig, range: HeightRange): BomSection[] {
   const levels = config.frames.length;
 
   // Frames grouped by size — two ladder frames per level (front + back).
@@ -67,8 +63,9 @@ export function buildBom(
         {
           name: 'U-Head Screwjack',
           qty: 4,
-          detail: `extended to ${mm(uHeadExtension)} · range ${mm(range.uHeadMin)}–${mm(range.uHeadMax)}`,
+          detail: `range ${mm(range.uHeadMin)}–${mm(range.uHeadMax)}`,
           live: true,
+          control: 'uHead',
         },
       ],
     },
@@ -78,8 +75,9 @@ export function buildBom(
         {
           name: `${baseName} Screwjack`,
           qty: 4,
-          detail: `extended to ${mm(baseExtension)} · range ${mm(range.baseMin)}–${mm(range.baseMax)}`,
+          detail: `range ${mm(range.baseMin)}–${mm(range.baseMax)}`,
           live: true,
+          control: 'base',
         },
       ],
     },
