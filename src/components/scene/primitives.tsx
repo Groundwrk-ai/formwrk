@@ -22,20 +22,21 @@ export const COLORS = {
 
 /** Common dimensions (metres). */
 export const DIMS = {
-  legSpacing: 0.6, // leg-to-leg within one H-frame (x)
-  frameDepth: 0.5, // front H-frame to back H-frame (z)
-  legRadius: 0.025,
-  braceRadius: 0.018,
-  rocketRadius: 0.022,
+  legSpacing: 0.6, // leg-to-leg within one ladder frame (x)
+  frameDepth: 0.5, // front ladder to back ladder (z)
+  legRadius: 0.03, // Royal 60 -> ~60mm OD leg
+  braceRadius: 0.02,
+  crossBraceRadius: 0.016,
+  rocketRadius: 0.026,
   rodRadius: 0.018,
-  collarRadius: 0.03,
+  collarRadius: 0.032,
   collarHeight: 0.04,
   plate: 0.2, // flat jack base plate side
-  plateThickness: 0.015,
-  bearerSpan: 0.9, // z length of a bearer
-  bearerWidth: 0.12, // x width of a bearer footprint
-  joistSpan: 1.1, // x length of a joist
-  joistWidth: 0.09, // z width of a joist
+  plateThickness: 0.016,
+  bearerSpan: 0.92, // z length of a bearer
+  bearerWidth: 0.077, // x width of a bearer (LVL 150x77 on edge)
+  joistSpan: 1.15, // x length of a joist
+  joistWidth: 0.065, // z width of a joist (LVL 95x65)
 } as const;
 
 export type Vec3 = [number, number, number];

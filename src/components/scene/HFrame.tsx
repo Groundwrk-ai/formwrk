@@ -1,23 +1,30 @@
-/** One H-frame (two legs + top/mid braces + X-bracing) in a single X-Y plane at depth z. */
+/**
+ * One Royal-60 ladder frame in a single X-Y plane at depth z:
+ * two vertical legs, two horizontal rungs, and a welded V-brace.
+ * The diagonal cross-bracing that forms the big "X" lives BETWEEN the two
+ * ladders (front + back) and is drawn by the Tower, matching the real system.
+ */
 import { Tube, DIMS } from './primitives';
 
 export function HFrame({ bottom, height, z }: { bottom: number; height: number; z: number }) {
   const hx = DIMS.legSpacing / 2;
   const top = bottom + height;
-  const mid = bottom + height / 2;
-  const inset = Math.min(0.08, height * 0.1);
+  const rungMid = bottom + height * 0.52;
+  const rungTop = top - 0.04;
+  const vApex = bottom + 0.06;
+  const vArms = bottom + height * 0.5;
 
   return (
     <group>
       {/* vertical legs */}
       <Tube from={[-hx, bottom, z]} to={[-hx, top, z]} radius={DIMS.legRadius} />
       <Tube from={[hx, bottom, z]} to={[hx, top, z]} radius={DIMS.legRadius} />
-      {/* top + mid horizontal braces */}
-      <Tube from={[-hx, top - 0.03, z]} to={[hx, top - 0.03, z]} radius={DIMS.braceRadius} />
-      <Tube from={[-hx, mid, z]} to={[hx, mid, z]} radius={DIMS.braceRadius} />
-      {/* X-bracing */}
-      <Tube from={[-hx, bottom + inset, z]} to={[hx, top - inset, z]} radius={DIMS.braceRadius} />
-      <Tube from={[hx, bottom + inset, z]} to={[-hx, top - inset, z]} radius={DIMS.braceRadius} />
+      {/* horizontal rungs */}
+      <Tube from={[-hx, rungMid, z]} to={[hx, rungMid, z]} radius={DIMS.braceRadius} />
+      <Tube from={[-hx, rungTop, z]} to={[hx, rungTop, z]} radius={DIMS.braceRadius} />
+      {/* welded V-brace (apex low centre, arms up to the legs) */}
+      <Tube from={[0, vApex, z]} to={[-hx, vArms, z]} radius={DIMS.braceRadius} />
+      <Tube from={[0, vApex, z]} to={[hx, vArms, z]} radius={DIMS.braceRadius} />
     </group>
   );
 }

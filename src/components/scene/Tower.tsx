@@ -10,7 +10,7 @@ import { Edges } from '@react-three/drei';
 import { useFormworkStore } from '../../store/formworkStore';
 import { computeLayout, type Segment } from '../../logic/layout';
 import { HFrame } from './HFrame';
-import { Tube, Box, DIMS, COLORS, type Vec3 } from './primitives';
+import { Tube, Box, DIMS, COLORS } from './primitives';
 
 const hx = DIMS.legSpacing / 2;
 const hz = DIMS.frameDepth / 2;
@@ -52,13 +52,17 @@ function PropInner({ seg, x, z }: { seg: Segment; x: number; z: number }) {
 }
 
 function UHead({ seg, x, z }: { seg: Segment; x: number; z: number }) {
-  const prong: Vec3 = [0.025, 0.1, DIMS.bearerWidth + 0.03];
+  const forkY = seg.top;
+  const prongH = 0.13;
+  const off = DIMS.bearerWidth / 2 + 0.018; // prongs sit just outside the bearer
   return (
     <group>
-      <Tube from={[x, seg.bottom, z]} to={[x, seg.top, z]} radius={DIMS.rodRadius} />
-      {/* fork: two prongs cradling the bearer (which runs along z) */}
-      <Box position={[x - 0.07, seg.top + 0.05, z]} size={prong} color={COLORS.metal} metalness={0.7} roughness={0.35} />
-      <Box position={[x + 0.07, seg.top + 0.05, z]} size={prong} color={COLORS.metal} metalness={0.7} roughness={0.35} />
+      <Tube from={[x, seg.bottom, z]} to={[x, forkY, z]} radius={DIMS.rodRadius} />
+      {/* fork base seat */}
+      <Box position={[x, forkY + 0.012, z]} size={[0.13, 0.024, 0.12]} color={COLORS.metal} metalness={0.7} roughness={0.35} />
+      {/* two upright prongs cradling the bearer (bearer width runs along x) */}
+      <Box position={[x - off, forkY + prongH / 2, z]} size={[0.02, prongH, 0.1]} color={COLORS.metal} metalness={0.7} roughness={0.35} />
+      <Box position={[x + off, forkY + prongH / 2, z]} size={[0.02, prongH, 0.1]} color={COLORS.metal} metalness={0.7} roughness={0.35} />
     </group>
   );
 }
@@ -78,9 +82,9 @@ export function Tower() {
   const isPropInner = config.baseType === 'propInner';
 
   // Joist positions along z (on top of the bearers).
-  const joistCount = 4;
+  const joistCount = 7;
   const joistZs = Array.from({ length: joistCount }, (_, i) =>
-    DIMS.bearerSpan * (i / (joistCount - 1) - 0.5),
+    DIMS.bearerSpan * 0.94 * (i / (joistCount - 1) - 0.5),
   );
 
   return (
@@ -94,11 +98,18 @@ export function Tower() {
         </group>
       ))}
 
-      {/* H-frames: front (z=-hz) and back (z=+hz), one per stacked frame segment */}
+      {/* ladder frames front (z=-hz) + back (z=+hz), plus the diagonal
+          cross-braces BETWEEN them on each side — the real Royal-60 "X" */}
       {layout.frames.map((f) => (
         <group key={f.index}>
           <HFrame bottom={f.bottom} height={f.height} z={-hz} />
           <HFrame bottom={f.bottom} height={f.height} z={hz} />
+          {[-hx, hx].map((x) => (
+            <group key={x}>
+              <Tube from={[x, f.bottom + 0.06, -hz]} to={[x, f.top - 0.06, hz]} radius={DIMS.crossBraceRadius} />
+              <Tube from={[x, f.top - 0.06, -hz]} to={[x, f.bottom + 0.06, hz]} radius={DIMS.crossBraceRadius} />
+            </group>
+          ))}
         </group>
       ))}
 
@@ -122,10 +133,10 @@ export function Tower() {
         />
       ))}
 
-      {/* ply deck */}
+      {/* ply deck (slight overhang past the joists) */}
       <Box
         position={[0, layout.ply.bottom + layout.ply.height / 2, 0]}
-        size={[DIMS.joistSpan, layout.ply.height, DIMS.bearerSpan]}
+        size={[DIMS.joistSpan + 0.08, layout.ply.height, DIMS.bearerSpan + 0.08]}
         color={COLORS.ply}
       />
 
