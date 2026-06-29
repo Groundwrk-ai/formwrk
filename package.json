@@ -1,8 +1,9 @@
 {
-  "name": "formwork-3d-configurator",
+  "name": "formwrk",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "Formwrk — a material planning and configuration tool for formwork shoring assemblies. Planning only; temporary engineering designs and inspections are required before erecting any formwork.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

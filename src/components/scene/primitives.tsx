@@ -26,7 +26,7 @@ export const DIMS = {
   frameDepth: 1.15, // front ladder to back ladder (z) — roughly square bay
   legRadius: 0.03, // ~60mm OD leg
   braceRadius: 0.021,
-  crossBraceRadius: 0.024,
+  crossBraceRadius: 0.013, // removable diagonal braces — much thinner than the frame tubes
   rocketRadius: 0.026,
   rodRadius: 0.02,
   collarRadius: 0.034,

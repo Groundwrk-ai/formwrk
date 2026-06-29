@@ -187,8 +187,17 @@
   color: var(--invalid);
 }
 
-.foot {
+.disclaimer {
   margin-top: auto;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #e0b98c;
+  background: rgba(217, 151, 58, 0.1);
+  border-left: 3px solid var(--warn);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.foot {
   font-size: 11px;
   color: var(--text-dim);
   line-height: 1.5;

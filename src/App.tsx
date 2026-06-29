@@ -10,14 +10,18 @@ export default function App() {
       <aside className="panel">
         <h1 className="brand">
           Formwrk
-          <small>Shoring system configurator</small>
+          <small>Material Planning Tool</small>
         </h1>
         <Inputs />
         <Materials />
         <HeightDisplay />
+        <div className="disclaimer">
+          This is a material planning and configuration tool only. Temporary engineering
+          designs and inspections, in accordance with local Standards and guidelines, are
+          required prior to erecting any formwork.
+        </div>
         <p className="foot">
-          Components and heights follow the material-selection spreadsheet. Drag-to-adjust
-          screwjacks and the component palette arrive in the next phases.
+          Drag-to-adjust screwjacks and the component palette arrive in the next phases.
         </p>
       </aside>
       <main className="viewport">

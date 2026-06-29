@@ -1,11 +1,15 @@
-# Formwork 3D Configurator
+# Formwrk — Material Planning Tool
 
-An interactive, browser-based 3D configurator for Australian concrete-formwork shoring
-assemblies. Enter a slab height (floor-to-soffit) and slab thickness; the tool finds every
-valid frame configuration, assembles the stack in a 3D viewport, and lets you drag the
-screwjacks while it shows the live min/max serviceable height range.
+A browser-based **material planning and configuration tool** for Australian concrete-formwork
+shoring assemblies. Enter a slab height (floor-to-soffit) and slab thickness; the tool
+illustrates the components, assembles the stack in a 3D viewport, and shows the bill of
+materials alongside the serviceable min/max height range.
 
 Built around steel shoring frames with LVL timber members.
+
+> ⚠️ **This is a material planning and configuration tool only.** Temporary engineering
+> designs and inspections, in accordance with local Standards and guidelines, are required
+> prior to erecting any formwork.
 
 ## Source of truth
 
