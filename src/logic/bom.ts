@@ -52,7 +52,8 @@ export function buildBom(config: FrameConfig, range: HeightRange): BomSection[] 
     ? [{ name: `${rocketMm}mm Extension Tube`, qty: 4, detail: `slides over each leg` }]
     : [{ name: 'No extension' }];
 
-  const baseName = config.baseType === 'propInner' ? 'Prop Inner No 1' : 'Flat Jack';
+  const isPropInner = config.baseType === 'propInner';
+  const baseName = isPropInner ? 'Prop Inner No 1' : 'Flat Jack Screwjack';
 
   return [
     { title: 'Frames', items: frameItems },
@@ -73,9 +74,9 @@ export function buildBom(config: FrameConfig, range: HeightRange): BomSection[] 
       title: 'Base',
       items: [
         {
-          name: `${baseName} Screwjack`,
+          name: baseName,
           qty: 4,
-          detail: `range ${mm(range.baseMin)}–${mm(range.baseMax)}`,
+          detail: `${isPropInner ? 'pinned' : 'screw-adjust'} · range ${mm(range.baseMin)}–${mm(range.baseMax)}`,
           live: true,
           control: 'base',
         },

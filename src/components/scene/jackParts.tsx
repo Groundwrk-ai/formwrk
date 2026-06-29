@@ -70,7 +70,60 @@ export function ThreadedRod({
   );
 }
 
-/** The butterfly/wing nut that locks the jack at height. */
+/** A smooth galvanised inner tube with a row of pin holes (Prop Inner No 1 — not threaded). */
+export function PinnedTube({
+  x,
+  z,
+  bottom,
+  top,
+  radius,
+}: {
+  x: number;
+  z: number;
+  bottom: number;
+  top: number;
+  radius: number;
+}) {
+  const height = Math.max(top - bottom, 0.001);
+  const holeYs = useMemo(() => {
+    const count = Math.min(16, Math.max(3, Math.floor(height / 0.06)));
+    return Array.from({ length: count }, (_, i) => bottom + 0.05 + (height - 0.1) * (i / (count - 1)));
+  }, [bottom, height]);
+
+  return (
+    <group>
+      <mesh position={[x, bottom + height / 2, z]} castShadow>
+        <cylinderGeometry args={[radius, radius, height, 16]} />
+        <meshStandardMaterial color="#bcc2ca" metalness={0.6} roughness={0.4} />
+      </mesh>
+      {holeYs.map((hy, i) => (
+        <mesh key={i} position={[x, hy, z]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.0085, 0.0085, radius * 2.1, 8]} />
+          <meshStandardMaterial color="#2a2e34" metalness={0.3} roughness={0.75} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/** The locking pin that holds a pinned inner at extension (passes through the tube). */
+export function Pin({ x, y, z, span }: { x: number; y: number; z: number; span: number }) {
+  return (
+    <group position={[x, y, z]}>
+      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.009, 0.009, span, 10]} />
+        <meshStandardMaterial color={NUT_COLOR} metalness={0.7} roughness={0.42} />
+      </mesh>
+      {/* small head on the front end */}
+      <mesh position={[0, 0, span / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.017, 0.017, 0.012, 10]} />
+        <meshStandardMaterial color={NUT_COLOR} metalness={0.7} roughness={0.42} />
+      </mesh>
+    </group>
+  );
+}
+
+/** The butterfly/wing nut that locks the screwjack at height. */
 export function WingNut({ x, y, z }: { x: number; y: number; z: number }) {
   return (
     <group position={[x, y, z]}>
