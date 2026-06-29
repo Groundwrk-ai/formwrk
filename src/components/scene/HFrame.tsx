@@ -1,5 +1,5 @@
 /**
- * One Royal-60 ladder frame in a single X-Y plane at depth z:
+ * One ladder frame in a single X-Y plane at depth z:
  * two vertical legs, two horizontal rungs, and a welded V-brace.
  * The diagonal cross-bracing that forms the big "X" lives BETWEEN the two
  * ladders (front + back) and is drawn by the Tower, matching the real system.

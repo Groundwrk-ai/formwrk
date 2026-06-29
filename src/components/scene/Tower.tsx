@@ -99,7 +99,7 @@ export function Tower() {
       ))}
 
       {/* ladder frames front (z=-hz) + back (z=+hz), plus the diagonal
-          cross-braces BETWEEN them on each side — the real Royal-60 "X" */}
+          cross-braces BETWEEN them on each side — the real shoring-frame "X" */}
       {layout.frames.map((f) => (
         <group key={f.index}>
           <HFrame bottom={f.bottom} height={f.height} z={-hz} />

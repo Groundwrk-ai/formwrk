@@ -24,7 +24,7 @@ export const COLORS = {
 export const DIMS = {
   legSpacing: 0.6, // leg-to-leg within one ladder frame (x)
   frameDepth: 0.5, // front ladder to back ladder (z)
-  legRadius: 0.03, // Royal 60 -> ~60mm OD leg
+  legRadius: 0.03, // ~60mm OD leg
   braceRadius: 0.02,
   crossBraceRadius: 0.016,
   rocketRadius: 0.026,

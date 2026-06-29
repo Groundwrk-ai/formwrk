@@ -20,7 +20,7 @@ export interface FrameConfig {
   label: string;
   /** Frame stack bottom→top, e.g. ['6ft'] or ['5ft','6ft'] or ['3ft','3ft','4ft']. */
   frames: string[];
-  /** Rocket extension: 'none' | '300mm' | '500mm'. */
+  /** Frame-leg extension: 'none' | '300mm' | '500mm'. */
   rocket: string;
   baseType: BaseType;
 }

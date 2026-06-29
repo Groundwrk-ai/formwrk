@@ -5,7 +5,7 @@ assemblies. Enter a slab height (floor-to-soffit) and slab thickness; the tool f
 valid frame configuration, assembles the stack in a 3D viewport, and lets you drag the
 screwjacks while it shows the live min/max serviceable height range.
 
-Built around **Royal 60 (184B)** shoring frames with **truFORM LVL** timber members.
+Built around steel shoring frames with LVL timber members.
 
 ## Source of truth
 

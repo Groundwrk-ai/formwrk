@@ -29,9 +29,9 @@ and matched exactly. The Phase 1 test suite encodes the spreadsheet's min/max fo
    pin holes, 300–1050mm range), not a flat-jack-style base. (Per the supplier catalogue.)
 7. **Geometry fidelity = source real dimensions where feasible**, fall back to
    representational. The supplied component PDFs are e-commerce pages, not datasheets; the
-   only hard numbers found were the Rocket 60 (300mm RR603 / 500mm RR605, 60mm sleeve over an
+   only hard numbers found were the extension tubes (300mm / 500mm, 60mm sleeve over an
    80mm core, slides over the top frame leg). A web-sourcing pass for frame leg-spacing/tube
-   OD, Flat Jack throw/base-plate, Prop Inner range, and truFORM LVL bearer/joist sizes is
+   OD, Flat Jack throw/base-plate, Prop Inner range, and LVL bearer/joist sizes is
    Phase 2 prep.
 8. **Platform = full responsive incl. phone.** Touch is first-class: U-Head and base
    extensions get +/- steppers and numeric entry (precise control on touch, also better on

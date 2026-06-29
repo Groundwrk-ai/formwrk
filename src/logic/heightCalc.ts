@@ -1,8 +1,8 @@
 /**
  * Core height calculation — replicates the spreadsheet's min/max logic exactly.
  *
- *   Min = FramesTotal + Rocket + FIXED_TIMBER + U_HEAD.min + BaseMin
- *   Max = FramesTotal + Rocket + FIXED_TIMBER + uHeadMax   + baseMax
+ *   Min = FramesTotal + Extension + FIXED_TIMBER + U_HEAD.min + BaseMin
+ *   Max = FramesTotal + Extension + FIXED_TIMBER + uHeadMax   + baseMax
  *
  * where uHeadMax / baseMax depend on slab thickness and frame count (see below).
  * Sheet note 100/101: Min/Max formula. Verified against every config in the sheet.

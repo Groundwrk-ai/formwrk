@@ -6,7 +6,7 @@
  * The spreadsheet is non-negotiable: if it changes, change these constants to match.
  */
 
-/** Royal 60 (184B) shoring-frame nominal heights, in mm. Sheet E9:E13. */
+/** Shoring-frame nominal heights, in mm. Sheet E9:E13. */
 export const FRAME_HEIGHTS: Record<string, number> = {
   '3ft': 915, // E9
   '4ft': 1219, // E10
@@ -15,11 +15,11 @@ export const FRAME_HEIGHTS: Record<string, number> = {
   '7ft': 2134, // E13
 };
 
-/** Rocket 60 extension tubes, in mm. Sheet D16:D17. */
+/** Frame-leg extension tubes, in mm. Sheet D16:D17. */
 export const ROCKETS: Record<string, number> = {
   none: 0,
-  '300mm': 300, // D16 (Rocket 60, SKU RR603)
-  '500mm': 500, // D17 (Rocket 60, SKU RR605)
+  '300mm': 300, // D16
+  '500mm': 500, // D17
 };
 
 /** Fixed formwork timber — vertical height contribution, in mm. Sheet rows 27-29. */

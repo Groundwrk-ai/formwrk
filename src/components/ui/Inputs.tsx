@@ -7,7 +7,6 @@ export function Inputs() {
   const slabThickness = useFormworkStore((s) => s.slabThickness);
   const setSlabHeight = useFormworkStore((s) => s.setSlabHeight);
   const setSlabThickness = useFormworkStore((s) => s.setSlabThickness);
-  const config = useFormworkStore((s) => s.config);
   const isThick = slabThickness >= SLAB_THRESHOLD;
 
   return (
@@ -37,9 +36,8 @@ export function Inputs() {
 
       <div className="config">
         <span className={`badge ${isThick ? 'thick' : 'thin'}`}>
-          {isThick ? `Thick ≥${SLAB_THRESHOLD}` : `Thin <${SLAB_THRESHOLD}`}
+          {isThick ? `Thick slab ≥${SLAB_THRESHOLD}mm` : `Thin slab <${SLAB_THRESHOLD}mm`}
         </span>
-        <div className="cfg-label">{config.label}</div>
       </div>
     </section>
   );
