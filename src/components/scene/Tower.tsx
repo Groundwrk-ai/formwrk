@@ -12,6 +12,7 @@ import { computeLayout, type Segment } from '../../logic/layout';
 import { HFrame } from './HFrame';
 import { Tube, Box, DIMS, COLORS } from './primitives';
 import { useVerticalDrag, type VerticalDragHandlers } from './useVerticalDrag';
+import { ThreadedRod, WingNut } from './jackParts';
 
 /** Invisible but raycastable cylinder that captures the screwjack drag. */
 function GrabHandle({
@@ -49,32 +50,27 @@ const COLUMNS: Array<[number, number]> = [
 
 function FlatJack({ seg, x, z, drag }: { seg: Segment; x: number; z: number; drag: VerticalDragHandlers }) {
   const grabH = Math.max(seg.height, 0.16) + 0.06;
+  const nutY = Math.min(seg.top - 0.05, seg.bottom + seg.height * 0.6);
   return (
     <group>
       <Box position={[x, seg.bottom + DIMS.plateThickness / 2, z]} size={[DIMS.plate, DIMS.plateThickness, DIMS.plate]} color={COLORS.metal} metalness={0.7} roughness={0.4} />
-      <Tube from={[x, seg.bottom, z]} to={[x, seg.top, z]} radius={DIMS.rodRadius} />
-      <mesh position={[x, seg.bottom + 0.06, z]} castShadow>
-        <cylinderGeometry args={[DIMS.collarRadius, DIMS.collarRadius, DIMS.collarHeight, 16]} />
-        <meshStandardMaterial color={COLORS.collar} metalness={0.5} roughness={0.4} />
-      </mesh>
+      <ThreadedRod x={x} z={z} bottom={seg.bottom} top={seg.top} radius={DIMS.rodRadius} />
+      <WingNut x={x} y={nutY} z={z} />
       <GrabHandle x={x} z={z} yCenter={seg.bottom + grabH / 2} height={grabH} radius={0.075} drag={drag} />
     </group>
   );
 }
 
 function PropInner({ seg, x, z, drag }: { seg: Segment; x: number; z: number; drag: VerticalDragHandlers }) {
-  // Telescoping inner tube: a wider outer sleeve over the lower portion + inner rod.
+  // Telescoping inner tube: a smooth outer sleeve over the lower portion + threaded inner rod.
   const sleeveTop = seg.bottom + seg.height * 0.45;
   const grabH = Math.max(seg.height, 0.16) + 0.06;
   return (
     <group>
       <Box position={[x, seg.bottom + DIMS.plateThickness / 2, z]} size={[DIMS.plate, DIMS.plateThickness, DIMS.plate]} color={COLORS.metal} metalness={0.7} roughness={0.4} />
       <Tube from={[x, seg.bottom, z]} to={[x, sleeveTop, z]} radius={DIMS.rodRadius * 1.5} />
-      <Tube from={[x, sleeveTop, z]} to={[x, seg.top, z]} radius={DIMS.rodRadius} />
-      <mesh position={[x, sleeveTop, z]} castShadow>
-        <cylinderGeometry args={[DIMS.collarRadius, DIMS.collarRadius, DIMS.collarHeight, 16]} />
-        <meshStandardMaterial color={COLORS.collar} metalness={0.5} roughness={0.4} />
-      </mesh>
+      <ThreadedRod x={x} z={z} bottom={sleeveTop} top={seg.top} radius={DIMS.rodRadius} />
+      <WingNut x={x} y={sleeveTop + 0.02} z={z} />
       <GrabHandle x={x} z={z} yCenter={seg.bottom + grabH / 2} height={grabH} radius={0.075} drag={drag} />
     </group>
   );
@@ -85,9 +81,11 @@ function UHead({ seg, x, z, drag }: { seg: Segment; x: number; z: number; drag: 
   const prongH = 0.13;
   const off = DIMS.bearerWidth / 2 + 0.018; // prongs sit just outside the bearer
   const grabH = Math.max(seg.height, 0.2) + 0.18;
+  const nutY = Math.min(seg.top - 0.06, seg.bottom + 0.08);
   return (
     <group>
-      <Tube from={[x, seg.bottom, z]} to={[x, forkY, z]} radius={DIMS.rodRadius} />
+      <ThreadedRod x={x} z={z} bottom={seg.bottom} top={forkY} radius={DIMS.rodRadius} />
+      <WingNut x={x} y={nutY} z={z} />
       {/* fork base seat */}
       <Box position={[x, forkY + 0.012, z]} size={[0.13, 0.024, 0.12]} color={COLORS.metal} metalness={0.7} roughness={0.35} />
       {/* two upright prongs cradling the bearer (bearer width runs along x) */}

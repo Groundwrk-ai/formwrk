@@ -31,18 +31,17 @@ function ShortBrace({ hx, bottom, top, z }: BraceProps) {
 }
 
 function TallBrace({ hx, bottom, top, z }: BraceProps) {
-  const topRung1 = top - 0.05;
-  const topRung2 = top - 0.2;
+  const topRung = top - 0.06;
   const botRung = bottom + 0.07;
-  const waist = (topRung2 + botRung) / 2;
+  const waist = (topRung + botRung) / 2;
   return (
     <>
-      <Tube from={[-hx, topRung1, z]} to={[hx, topRung1, z]} radius={DIMS.braceRadius} />
-      <Tube from={[-hx, topRung2, z]} to={[hx, topRung2, z]} radius={DIMS.braceRadius} />
+      {/* single top rung */}
+      <Tube from={[-hx, topRung, z]} to={[hx, topRung, z]} radius={DIMS.braceRadius} />
       <Tube from={[-hx, botRung, z]} to={[hx, botRung, z]} radius={DIMS.braceRadius} />
-      {/* hourglass X between the lower top rung and the bottom rung */}
-      <Tube from={[-hx, topRung2, z]} to={[hx, botRung, z]} radius={DIMS.braceRadius} />
-      <Tube from={[hx, topRung2, z]} to={[-hx, botRung, z]} radius={DIMS.braceRadius} />
+      {/* hourglass X between the top rung and the bottom rung */}
+      <Tube from={[-hx, topRung, z]} to={[hx, botRung, z]} radius={DIMS.braceRadius} />
+      <Tube from={[hx, topRung, z]} to={[-hx, botRung, z]} radius={DIMS.braceRadius} />
       {/* waist rung at the crossing */}
       <Tube from={[-hx, waist, z]} to={[hx, waist, z]} radius={DIMS.braceRadius * 0.9} />
     </>
