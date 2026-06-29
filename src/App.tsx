@@ -21,7 +21,8 @@ export default function App() {
           required prior to erecting any formwork.
         </div>
         <p className="foot">
-          Drag-to-adjust screwjacks and the component palette arrive in the next phases.
+          Drag the screwjacks (or use the steppers) to set the height; the Other tab lists
+          every valid configuration for the entered slab.
         </p>
       </aside>
       <main className="viewport">

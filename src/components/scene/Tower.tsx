@@ -5,8 +5,11 @@
  * The top of the ply sits exactly at `currentHeight` (truthful to the calc),
  * and the ghost soffit plane sits at the target slab height.
  */
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
+import gsap from 'gsap';
+import type { Group } from 'three';
 import { useFormworkStore } from '../../store/formworkStore';
 import { computeLayout, type Segment } from '../../logic/layout';
 import { HFrame } from './HFrame';
@@ -98,6 +101,39 @@ function UHead({ seg, x, z, drag }: { seg: Segment; x: number; z: number; drag: 
   );
 }
 
+/**
+ * A build-sequence group: hidden until the global progress reaches its `stage`,
+ * then slots down into place from `drop` metres above. Driven imperatively in
+ * useFrame so it never triggers React re-renders.
+ */
+function AnimGroup({
+  stage,
+  progress,
+  drop = 0.5,
+  children,
+}: {
+  stage: number;
+  progress: { current: number };
+  drop?: number;
+  children: ReactNode;
+}) {
+  const ref = useRef<Group>(null);
+  useFrame(() => {
+    const g = ref.current;
+    if (!g) return;
+    const local = progress.current - stage;
+    if (local <= 0) {
+      if (g.visible) g.visible = false;
+      return;
+    }
+    if (!g.visible) g.visible = true;
+    const t = local < 1 ? local : 1;
+    const ease = 1 - Math.pow(1 - t, 3); // easeOutCubic
+    g.position.y = drop * (1 - ease);
+  });
+  return <group ref={ref}>{children}</group>;
+}
+
 export function Tower() {
   const config = useFormworkStore((s) => s.config);
   const uHeadExtension = useFormworkStore((s) => s.uHeadExtension);
@@ -134,21 +170,52 @@ export function Tower() {
     DIMS.bearerSpan * 0.95 * (i / (joistCount - 1) - 0.5),
   );
 
+  const rocket = layout.rocket;
+
+  // Build-sequence stage indices (ground up): base -> each frame -> extension
+  // -> U-heads -> bearers -> joists -> ply.
+  let s = 0;
+  const baseStage = s++;
+  const frameStages = layout.frames.map(() => s++);
+  const extStage = rocket ? s++ : -1;
+  const uHeadStage = s++;
+  const bearerStage = s++;
+  const joistStage = s++;
+  const plyStage = s++;
+  const totalStages = s;
+
+  // Replay the build animation whenever the configuration changes (not on
+  // screwjack drags — those only change extensions, not config.id).
+  const progress = useRef(0);
+  useLayoutEffect(() => {
+    progress.current = 0;
+    const tw = gsap.to(progress, {
+      current: totalStages,
+      duration: Math.max(1, totalStages * 0.26),
+      ease: 'none',
+    });
+    return () => {
+      tw.kill();
+    };
+  }, [config.id, totalStages]);
+
   return (
     <group>
-      {/* base jacks + frame stacks + rockets + U-heads, per column */}
-      {COLUMNS.map(([x, z], ci) => (
-        <group key={ci}>
-          {isPropInner ? <PropInner seg={layout.base} x={x} z={z} drag={baseDrag} /> : <FlatJack seg={layout.base} x={x} z={z} drag={baseDrag} />}
-          {layout.rocket && <Extension x={x} z={z} bottom={layout.rocket.bottom} top={layout.rocket.top} legRadius={DIMS.legRadius} />}
-          <UHead seg={layout.uHead} x={x} z={z} drag={uHeadDrag} />
-        </group>
-      ))}
+      {/* 1) base jacks appear on the ground first */}
+      <AnimGroup stage={baseStage} progress={progress}>
+        {COLUMNS.map(([x, z], ci) =>
+          isPropInner ? (
+            <PropInner key={ci} seg={layout.base} x={x} z={z} drag={baseDrag} />
+          ) : (
+            <FlatJack key={ci} seg={layout.base} x={x} z={z} drag={baseDrag} />
+          ),
+        )}
+      </AnimGroup>
 
-      {/* ladder frames front (z=-hz) + back (z=+hz), plus the diagonal
-          cross-braces BETWEEN them on each side — the real shoring-frame "X" */}
-      {layout.frames.map((f) => (
-        <group key={f.index}>
+      {/* 2) each frame level slots over the one below — with its cross-braces
+            and the coupling collars that join it to the frame beneath */}
+      {layout.frames.map((f, i) => (
+        <AnimGroup key={f.index} stage={frameStages[i]} progress={progress}>
           <HFrame bottom={f.bottom} height={f.height} z={-hz} size={f.size} />
           <HFrame bottom={f.bottom} height={f.height} z={hz} size={f.size} />
           {[-hx, hx].map((x) => (
@@ -157,47 +224,64 @@ export function Tower() {
               <Tube from={[x, f.top - 0.07, -hz]} to={[x, f.bottom + 0.07, hz]} radius={DIMS.crossBraceRadius} />
             </group>
           ))}
-        </group>
+          {i > 0 &&
+            COLUMNS.map(([x, z], ci) => (
+              <mesh key={`c${ci}`} position={[x, f.bottom, z]} castShadow>
+                <cylinderGeometry args={[DIMS.legRadius * 1.45, DIMS.legRadius * 1.45, 0.085, 18]} />
+                <meshStandardMaterial color="#9aa0a8" metalness={0.7} roughness={0.45} />
+              </mesh>
+            ))}
+        </AnimGroup>
       ))}
 
-      {/* coupling collars where stacked frames join — makes 2/3-frame stacks read clearly */}
-      {layout.frames.slice(1).map((f) => (
-        <group key={`join-${f.index}`}>
+      {/* 3) extensions slot over the frame legs */}
+      {rocket && (
+        <AnimGroup stage={extStage} progress={progress}>
           {COLUMNS.map(([x, z], ci) => (
-            <mesh key={ci} position={[x, f.bottom, z]} castShadow>
-              <cylinderGeometry args={[DIMS.legRadius * 1.45, DIMS.legRadius * 1.45, 0.085, 18]} />
-              <meshStandardMaterial color="#9aa0a8" metalness={0.7} roughness={0.45} />
-            </mesh>
+            <Extension key={ci} x={x} z={z} bottom={rocket.bottom} top={rocket.top} legRadius={DIMS.legRadius} />
           ))}
-        </group>
-      ))}
+        </AnimGroup>
+      )}
 
-      {/* bearers: run along z at x = ±hx, resting on the U-heads */}
-      {[-hx, hx].map((x) => (
+      {/* 4) U-heads go on top */}
+      <AnimGroup stage={uHeadStage} progress={progress}>
+        {COLUMNS.map(([x, z], ci) => (
+          <UHead key={ci} seg={layout.uHead} x={x} z={z} drag={uHeadDrag} />
+        ))}
+      </AnimGroup>
+
+      {/* 5) bearers drop into the U-heads */}
+      <AnimGroup stage={bearerStage} progress={progress} drop={0.35}>
+        {[-hx, hx].map((x) => (
+          <Box
+            key={x}
+            position={[x, layout.bearer.bottom + layout.bearer.height / 2, 0]}
+            size={[DIMS.bearerWidth, layout.bearer.height, DIMS.bearerSpan]}
+            color={COLORS.bearer}
+          />
+        ))}
+      </AnimGroup>
+
+      {/* 6) joists drop onto the bearers */}
+      <AnimGroup stage={joistStage} progress={progress} drop={0.3}>
+        {joistZs.map((z, i) => (
+          <Box
+            key={i}
+            position={[0, layout.joist.bottom + layout.joist.height / 2, z]}
+            size={[DIMS.joistSpan, layout.joist.height, DIMS.joistWidth]}
+            color={COLORS.joist}
+          />
+        ))}
+      </AnimGroup>
+
+      {/* 7) ply slides over the joists */}
+      <AnimGroup stage={plyStage} progress={progress} drop={0.3}>
         <Box
-          key={x}
-          position={[x, layout.bearer.bottom + layout.bearer.height / 2, 0]}
-          size={[DIMS.bearerWidth, layout.bearer.height, DIMS.bearerSpan]}
-          color={COLORS.bearer}
+          position={[0, layout.ply.bottom + layout.ply.height / 2, 0]}
+          size={[DIMS.joistSpan + 0.08, layout.ply.height, DIMS.bearerSpan + 0.08]}
+          color={COLORS.ply}
         />
-      ))}
-
-      {/* joists: run along x, on top of the bearers */}
-      {joistZs.map((z, i) => (
-        <Box
-          key={i}
-          position={[0, layout.joist.bottom + layout.joist.height / 2, z]}
-          size={[DIMS.joistSpan, layout.joist.height, DIMS.joistWidth]}
-          color={COLORS.joist}
-        />
-      ))}
-
-      {/* ply deck (slight overhang past the joists) */}
-      <Box
-        position={[0, layout.ply.bottom + layout.ply.height / 2, 0]}
-        size={[DIMS.joistSpan + 0.08, layout.ply.height, DIMS.bearerSpan + 0.08]}
-        color={COLORS.ply}
-      />
+      </AnimGroup>
 
       {/* ghost soffit plane at the target height — the slab underside to dial up to */}
       <mesh position={[0, layout.soffitY, 0]} rotation={[-Math.PI / 2, 0, 0]}>

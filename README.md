@@ -44,9 +44,9 @@ npm run build    # type-check + production build to dist/
 | 2 | Static 3D scene (realistic components) | ✅ complete |
 | 3 | Screwjack drag + touch steppers | ✅ complete |
 | 4 | Optimal / Other config picker | ✅ complete |
+| 5 | Assembly animation (GSAP, ground-up) | ✅ complete |
 | 6 | Visual polish (reflections, soft shadows, materials) | ✅ done |
 | — | Height-range display | ✅ done |
-| 5 | Assembly animation (GSAP) | ⬜ remaining |
 | — | Component labels / final touches | ⬜ optional |
 
 ## Project structure
