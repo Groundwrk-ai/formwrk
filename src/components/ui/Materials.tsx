@@ -27,8 +27,8 @@ export function Materials() {
   const isOptimal = !optimal || optimal.id === config.id;
 
   const sections = buildBom(config, range);
-  const frameCount = config.frames.length;
-  const kind = frameCount === 1 ? 'Single' : frameCount === 2 ? 'Double' : 'Triple';
+  // Singles' labels are just "6ft" etc., so prefix them; doubles/triples already say so.
+  const summary = config.frames.length === 1 ? `Single · ${config.label}` : config.label;
 
   return (
     <section className="card materials">
@@ -59,9 +59,7 @@ export function Materials() {
       ) : (
         <>
           <div className="materials-head">
-            <span className="materials-kind">
-              {kind} · {config.label}
-            </span>
+            <span className="materials-kind">{summary}</span>
             {!isOptimal && optimal ? (
               <button type="button" className="revert" onClick={() => setConfig(optimal)}>
                 ↩ optimal

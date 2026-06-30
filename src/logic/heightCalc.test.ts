@@ -6,6 +6,7 @@ import {
   isConfigValidForInputs,
   currentHeight,
   isThickSlab,
+  allocateExtensionsToTarget,
 } from './heightCalc';
 import {
   simplestValidConfig,
@@ -238,5 +239,31 @@ describe('simplestAvailableConfig (safe fallback)', () => {
     expect(simplestAvailableConfig(200).baseType).toBe('flatJack');
     expect(simplestAvailableConfig(250).baseType).toBe('flatJack');
     expect(simplestAvailableConfig(250).frames.length).toBe(1);
+  });
+});
+
+describe('allocateExtensionsToTarget (auto-adjust the assembly to the soffit)', () => {
+  it('hits the target exactly for every config + representative targets, within jack ranges', () => {
+    for (const id of Object.keys(THIN_EXPECTED)) {
+      const c = CONFIG_BY_ID[id];
+      const r = calcHeightRange(c, THIN);
+      for (const target of [r.min, Math.round((r.min + r.max) / 2), r.max]) {
+        const { uHeadExtension, baseExtension } = allocateExtensionsToTarget(c, THIN, target);
+        expect(uHeadExtension).toBeGreaterThanOrEqual(r.uHeadMin);
+        expect(uHeadExtension).toBeLessThanOrEqual(r.uHeadMax);
+        expect(baseExtension).toBeGreaterThanOrEqual(r.baseMin);
+        expect(baseExtension).toBeLessThanOrEqual(r.baseMax);
+        expect(currentHeight(c, uHeadExtension, baseExtension)).toBe(target);
+      }
+    }
+  });
+
+  it('clamps to the nearest end when the target is outside the range', () => {
+    const c = CONFIG_BY_ID['s-6ft-fj'];
+    const r = calcHeightRange(c, THIN);
+    const below = allocateExtensionsToTarget(c, THIN, r.min - 500);
+    expect(currentHeight(c, below.uHeadExtension, below.baseExtension)).toBe(r.min);
+    const above = allocateExtensionsToTarget(c, THIN, r.max + 500);
+    expect(currentHeight(c, above.uHeadExtension, above.baseExtension)).toBe(r.max);
   });
 });

@@ -17,6 +17,7 @@ import {
   calcHeightRange,
   currentHeight as calcCurrentHeight,
   isAvailableForSlab,
+  allocateExtensionsToTarget,
 } from '../logic/heightCalc';
 import { simplestValidConfig, simplestAvailableConfig } from '../logic/catalogue';
 import { INPUT_LIMITS } from '../logic/frameData';
@@ -62,23 +63,16 @@ function derive(
  *  - prefer the simplest valid config for the height,
  *  - else keep the previous config IF it's still available for the slab,
  *  - else fall back to the simplest available config (never a prohibited one),
- * then clamp the screwjack extensions to the chosen config's ranges.
+ * then ALLOCATE the screwjacks so the assembly is rendered adjusted to the target
+ * soffit (clamped to the config's range). Manual drags afterward are preserved.
  */
-function resolveAssembly(
-  slabHeight: number,
-  slabThickness: number,
-  prevConfig: FrameConfig,
-  prevUHead: number,
-  prevBase: number,
-) {
+function resolveAssembly(slabHeight: number, slabThickness: number, prevConfig: FrameConfig) {
   const config =
     simplestValidConfig(slabHeight, slabThickness) ??
     (isAvailableForSlab(prevConfig, slabThickness)
       ? prevConfig
       : simplestAvailableConfig(slabThickness));
-  const range = calcHeightRange(config, slabThickness);
-  const uHeadExtension = clamp(prevUHead, range.uHeadMin, range.uHeadMax);
-  const baseExtension = clamp(prevBase, range.baseMin, range.baseMax);
+  const { uHeadExtension, baseExtension } = allocateExtensionsToTarget(config, slabThickness, slabHeight);
   return {
     slabHeight,
     slabThickness,
@@ -114,28 +108,28 @@ export interface FormworkState extends Derived {
 const DEFAULT_HEIGHT = 2800;
 const DEFAULT_THICKNESS = 200;
 const initialConfig = simplestValidConfig(DEFAULT_HEIGHT, DEFAULT_THICKNESS) ?? CONFIG_BY_ID['s-6ft-fj'];
-const initialRange = calcHeightRange(initialConfig, DEFAULT_THICKNESS);
+const initialAlloc = allocateExtensionsToTarget(initialConfig, DEFAULT_THICKNESS, DEFAULT_HEIGHT);
 
 export const useFormworkStore = create<FormworkState>((set, get) => ({
   slabHeight: DEFAULT_HEIGHT,
   slabThickness: DEFAULT_THICKNESS,
   config: initialConfig,
-  uHeadExtension: initialRange.uHeadMin,
-  baseExtension: initialRange.baseMin,
-  ...derive(initialConfig, DEFAULT_THICKNESS, DEFAULT_HEIGHT, initialRange.uHeadMin, initialRange.baseMin),
+  uHeadExtension: initialAlloc.uHeadExtension,
+  baseExtension: initialAlloc.baseExtension,
+  ...derive(initialConfig, DEFAULT_THICKNESS, DEFAULT_HEIGHT, initialAlloc.uHeadExtension, initialAlloc.baseExtension),
 
   setSlabHeight: (h) => {
     if (!Number.isFinite(h)) return; // reject NaN / Infinity
     const s = get();
     const slabHeight = clamp(Math.round(h), 0, INPUT_LIMITS.slabHeightMax);
-    set(resolveAssembly(slabHeight, s.slabThickness, s.config, s.uHeadExtension, s.baseExtension));
+    set(resolveAssembly(slabHeight, s.slabThickness, s.config));
   },
 
   setSlabThickness: (t) => {
     if (!Number.isFinite(t)) return;
     const s = get();
     const slabThickness = clamp(Math.round(t), 0, INPUT_LIMITS.slabThicknessMax);
-    set(resolveAssembly(s.slabHeight, slabThickness, s.config, s.uHeadExtension, s.baseExtension));
+    set(resolveAssembly(s.slabHeight, slabThickness, s.config));
   },
 
   setConfig: (configArg) => {
@@ -144,9 +138,8 @@ export const useFormworkStore = create<FormworkState>((set, get) => ({
     const config = isAvailableForSlab(configArg, s.slabThickness)
       ? configArg
       : simplestAvailableConfig(s.slabThickness);
-    const range = calcHeightRange(config, s.slabThickness);
-    const uHeadExtension = clamp(s.uHeadExtension, range.uHeadMin, range.uHeadMax);
-    const baseExtension = clamp(s.baseExtension, range.baseMin, range.baseMax);
+    // Render the newly-selected config adjusted to the target soffit.
+    const { uHeadExtension, baseExtension } = allocateExtensionsToTarget(config, s.slabThickness, s.slabHeight);
     set({
       config,
       uHeadExtension,

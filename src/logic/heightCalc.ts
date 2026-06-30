@@ -91,3 +91,27 @@ export function isConfigValidForInputs(
 export function currentHeight(config: FrameConfig, uHeadExtension: number, baseExtension: number): number {
   return framesTotal(config.frames) + (ROCKETS[config.rocket] ?? 0) + FIXED_TIMBER + uHeadExtension + baseExtension;
 }
+
+/**
+ * Deterministically allocate the U-Head and base extensions so the assembled
+ * height reaches the target soffit, clamped to the config's serviceable range
+ * (if the target is below min / above max, the assembly sits at the nearest end).
+ *
+ * Preference (site-appropriate): the BASE jack carries the gross height, the
+ * U-Head takes the remainder — i.e. extend the base first, then the U-head. Both
+ * components always stay within their allowed range.
+ */
+export function allocateExtensionsToTarget(
+  config: FrameConfig,
+  slabThickness: number,
+  slabHeight: number,
+): { uHeadExtension: number; baseExtension: number } {
+  const r = calcHeightRange(config, slabThickness);
+  const fixedBelowJacks = r.min - (r.uHeadMin + r.baseMin); // frames + rocket + timber
+  const sumMin = r.uHeadMin + r.baseMin;
+  const sumMax = r.uHeadMax + r.baseMax;
+  const needed = Math.min(sumMax, Math.max(sumMin, slabHeight - fixedBelowJacks));
+  const baseExtension = Math.min(r.baseMax, Math.max(r.baseMin, needed - r.uHeadMin));
+  const uHeadExtension = Math.min(r.uHeadMax, Math.max(r.uHeadMin, needed - baseExtension));
+  return { uHeadExtension, baseExtension };
+}

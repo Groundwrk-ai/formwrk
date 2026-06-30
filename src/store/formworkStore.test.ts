@@ -5,12 +5,9 @@ import { CONFIG_BY_ID } from '../logic/configurations';
 const get = () => useFormworkStore.getState();
 
 beforeEach(() => {
-  // Reset to a known baseline: thin 200mm slab, 2800mm soffit -> 6ft Flat Jack at min extensions.
+  // Reset to a known baseline: thin 200mm slab, 2800mm soffit.
   get().setSlabThickness(200);
   get().setSlabHeight(2800);
-  get().setConfig(CONFIG_BY_ID['s-6ft-fj']);
-  get().setUHeadExtension(0); // clamps to min
-  get().setBaseExtension(0); // clamps to min
 });
 
 describe('store: slab-availability invariant (Finding 1)', () => {
@@ -64,20 +61,51 @@ describe('store: input hardening (Finding 7)', () => {
   });
 });
 
-describe('store: verdict-supporting derived state (Finding 3)', () => {
-  it('default 6ft FJ at 2800mm is serviceable but not yet at target', () => {
+describe('store: renders adjusted to the target soffit (every entry path)', () => {
+  it('loads adjusted to the target (current == target, meetsTarget)', () => {
     expect(get().config.id).toBe('s-6ft-fj');
-    expect(get().isValid).toBe(true);
-    expect(get().currentHeight).toBeLessThan(get().slabHeight);
-    expect(get().meetsTarget).toBe(false);
-  });
-
-  it('meetsTarget becomes true only when extensions dial current to the target', () => {
-    // 6ft FJ thin: current = 1830 + 267 + uHead + base; target 2800 -> uHead+base = 703
-    get().setUHeadExtension(500);
-    get().setBaseExtension(203);
     expect(get().currentHeight).toBe(2800);
     expect(get().meetsTarget).toBe(true);
-    expect(get().isValid).toBe(true);
+  });
+
+  it('re-allocates to reach a new target height', () => {
+    get().setSlabHeight(2600);
+    expect(get().currentHeight).toBe(2600);
+    expect(get().meetsTarget).toBe(true);
+
+    get().setSlabHeight(5000); // auto-assembles a double that services 5000
+    expect(get().currentHeight).toBe(5000);
+    expect(get().meetsTarget).toBe(true);
+  });
+
+  it('picking a config from Other renders it adjusted to the current target', () => {
+    get().setSlabHeight(3500);
+    get().setConfig(CONFIG_BY_ID['s-7ft-pi']); // valid alternative at 3500 thin (2801–3951)
+    expect(get().config.id).toBe('s-7ft-pi');
+    expect(get().currentHeight).toBe(3500);
+    expect(get().meetsTarget).toBe(true);
+  });
+
+  it('allocated extensions stay within each jack’s range', () => {
+    const s = get();
+    expect(s.uHeadExtension).toBeGreaterThanOrEqual(s.range.uHeadMin);
+    expect(s.uHeadExtension).toBeLessThanOrEqual(s.range.uHeadMax);
+    expect(s.baseExtension).toBeGreaterThanOrEqual(s.range.baseMin);
+    expect(s.baseExtension).toBeLessThanOrEqual(s.range.baseMax);
+  });
+
+  it('a manual drag away from the target shows not-at-target (verdict no longer green)', () => {
+    get().setUHeadExtension(get().range.uHeadMin);
+    get().setBaseExtension(get().range.baseMin);
+    expect(get().meetsTarget).toBe(false);
+    expect(get().currentHeight).toBeLessThan(get().slabHeight);
+    expect(get().isValid).toBe(true); // still serviceable, just not dialled
+  });
+
+  it('when nothing services the height, the assembly sits at the nearest end (no crash)', () => {
+    get().setSlabHeight(7000);
+    expect(get().hasValidOption).toBe(false);
+    expect(Number.isFinite(get().currentHeight)).toBe(true);
+    expect(get().currentHeight).toBe(get().range.max); // closest reachable below an unreachable target
   });
 });

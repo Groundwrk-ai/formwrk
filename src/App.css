@@ -210,15 +210,20 @@
 /* Components / materials list (the primary panel) */
 .materials-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
+  background: rgba(45, 158, 107, 0.16);
+  border-left: 3px solid var(--valid);
+  border-radius: 8px;
+  padding: 10px 12px;
 }
 .materials-kind {
   font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-dim);
-  text-align: right;
+  font-size: 16px;
+  font-weight: 600;
+  color: #5fcf9b;
+  letter-spacing: 0.2px;
 }
 .bom-section {
   display: flex;
