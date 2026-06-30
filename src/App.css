@@ -435,6 +435,91 @@
   color: var(--text-dim);
 }
 
+/* View-mode segmented control (overlaid top-right of the viewport) */
+.viewmode {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: rgba(26, 30, 36, 0.82);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+.vm-btn {
+  padding: 7px 14px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.vm-btn:hover:not(.active) {
+  color: var(--text);
+}
+.vm-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Floating 3D labels (drei <Html>) — exploded component tags */
+.part-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(26, 30, 36, 0.9);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 6px;
+  padding: 4px 9px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  user-select: none;
+}
+.part-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #6bb0ee;
+}
+
+/* Storage-yard container labels */
+.yard-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(26, 30, 36, 0.82);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 9px;
+  user-select: none;
+}
+.yard-label.dim {
+  opacity: 0.45;
+}
+.yard-cap {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+}
+
 /* Responsive: stack the panel under the viewport on narrow screens */
 @media (max-width: 720px) {
   .app {

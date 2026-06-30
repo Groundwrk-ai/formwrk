@@ -2,6 +2,7 @@ import { FrameScene } from './components/scene/FrameScene';
 import { Inputs } from './components/ui/Inputs';
 import { Materials } from './components/ui/Materials';
 import { HeightDisplay } from './components/ui/HeightDisplay';
+import { ViewModeToggle } from './components/ui/ViewModeToggle';
 import './App.css';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
         </p>
       </aside>
       <main className="viewport">
+        <ViewModeToggle />
         <FrameScene />
       </main>
     </div>

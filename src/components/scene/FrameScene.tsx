@@ -2,33 +2,56 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment, Lightformer, ContactShadows } from '@react-three/drei';
+import gsap from 'gsap';
 import * as THREE from 'three';
 import { Ground } from './Ground';
 import { Tower } from './Tower';
+import { StorageYard } from './StorageYard';
+import { TransitionProvider } from './transition';
 import { COLORS } from './primitives';
 import { useFormworkStore } from '../../store/formworkStore';
 
 /**
- * Reframes the camera when the assembly's frame count changes (single/double/
- * triple), so tall towers stay in view. Deliberately does NOT refit on every
- * height tweak, so the user can orbit/zoom freely while dragging screwjacks.
+ * Reframes the camera when the assembly's frame count OR the view mode changes:
+ * exploded pulls back to fit the fanned-out parts; packed swings toward the
+ * storage yard off to the side. Deliberately does NOT refit on height tweaks, so
+ * the user can orbit/zoom freely while dragging screwjacks.
  */
 function CameraRig({ controlsRef }: { controlsRef: RefObject<any> }) {
   const frameCount = useFormworkStore((s) => s.config.frames.length);
+  const viewMode = useFormworkStore((s) => s.viewMode);
   const camera = useThree((s) => s.camera);
 
   useEffect(() => {
     const topM = useFormworkStore.getState().currentHeight / 1000;
-    const midY = topM / 2;
-    const dist = Math.max(4.4, topM * 1.45);
-    camera.position.set(dist * 0.8, midY + topM * 0.3 + 0.6, dist);
-    camera.lookAt(0, midY, 0);
-    const c = controlsRef.current;
-    if (c) {
-      c.target.set(0, midY, 0);
-      c.update();
+    let targetX = 0;
+    let targetY = topM / 2;
+    let dist = Math.max(4.4, topM * 1.45);
+    if (viewMode === 'exploded') {
+      targetY = topM * 0.62;
+      dist = Math.max(6.4, topM * 1.9);
+    } else if (viewMode === 'packed') {
+      // Frame both the ghosted tower (x≈0) and the yard block (x≈2.9..6.8).
+      targetX = 3.4;
+      targetY = 0.8;
+      dist = Math.max(9.5, topM * 2.1);
     }
-  }, [frameCount, camera, controlsRef]);
+    const camPos = {
+      x: targetX + dist * (viewMode === 'packed' ? 0.55 : 0.8),
+      y: targetY + topM * 0.32 + (viewMode === 'packed' ? 1.4 : 0.7),
+      z: dist,
+    };
+    const c = controlsRef.current;
+    gsap.to(camera.position, {
+      ...camPos,
+      duration: 0.85,
+      ease: 'power2.inOut',
+      onUpdate: () => c?.update(),
+    });
+    if (c) {
+      gsap.to(c.target, { x: targetX, y: targetY, z: 0, duration: 0.85, ease: 'power2.inOut', onUpdate: () => c.update() });
+    }
+  }, [frameCount, viewMode, camera, controlsRef]);
 
   return null;
 }
@@ -57,18 +80,13 @@ export function FrameScene() {
       </Environment>
 
       <Ground />
-      <Tower />
+      <TransitionProvider>
+        <Tower />
+        <StorageYard />
+      </TransitionProvider>
 
       {/* Soft contact shadow grounds the tower without harsh edges. */}
-      <ContactShadows
-        position={[0, 0.014, 0]}
-        scale={7}
-        far={6}
-        blur={2.6}
-        opacity={0.55}
-        resolution={1024}
-        color="#04060a"
-      />
+      <ContactShadows position={[0, 0.014, 0]} scale={7} far={6} blur={2.6} opacity={0.55} resolution={1024} color="#04060a" />
 
       <OrbitControls
         ref={controlsRef}

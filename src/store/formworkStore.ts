@@ -24,6 +24,14 @@ import { INPUT_LIMITS } from '../logic/frameData';
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
 
+/**
+ * How the tower is presented in the 3D viewport:
+ *  - 'assembled': the erected shoring tower (the default working view),
+ *  - 'exploded':  every component type separated along the build axis + labelled,
+ *  - 'packed':    the tower ghosted, with the materials shown stored in the yard.
+ */
+export type ViewMode = 'assembled' | 'exploded' | 'packed';
+
 interface Derived {
   range: ReturnType<typeof calcHeightRange>;
   currentHeight: number;
@@ -93,6 +101,9 @@ export interface FormworkState extends Derived {
   uHeadExtension: number;
   baseExtension: number;
 
+  // Presentation
+  viewMode: ViewMode;
+
   // Actions
   setSlabHeight: (h: number) => void;
   setSlabThickness: (t: number) => void;
@@ -102,6 +113,8 @@ export interface FormworkState extends Derived {
   setBaseExtension: (v: number) => void;
   /** Re-pick the simplest valid config for the current inputs (no-op if none fits). */
   autoAssemble: () => void;
+  /** Switch the viewport presentation (assembled / exploded / packed). */
+  setViewMode: (mode: ViewMode) => void;
 }
 
 // Sensible defaults: 2800mm soffit, 200mm (thin) slab -> simplest valid = 6ft Flat Jack.
@@ -116,6 +129,7 @@ export const useFormworkStore = create<FormworkState>((set, get) => ({
   config: initialConfig,
   uHeadExtension: initialAlloc.uHeadExtension,
   baseExtension: initialAlloc.baseExtension,
+  viewMode: 'assembled',
   ...derive(initialConfig, DEFAULT_THICKNESS, DEFAULT_HEIGHT, initialAlloc.uHeadExtension, initialAlloc.baseExtension),
 
   setSlabHeight: (h) => {
@@ -173,6 +187,8 @@ export const useFormworkStore = create<FormworkState>((set, get) => ({
     const next = simplestValidConfig(s.slabHeight, s.slabThickness);
     if (next) get().setConfig(next);
   },
+
+  setViewMode: (mode) => set({ viewMode: mode }),
 }));
 
 // Dev-only hook for previewing arbitrary configs (e.g. short-frame triples that

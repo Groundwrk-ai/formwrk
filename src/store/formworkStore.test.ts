@@ -109,3 +109,29 @@ describe('store: renders adjusted to the target soffit (every entry path)', () =
     expect(get().currentHeight).toBe(get().range.max); // closest reachable below an unreachable target
   });
 });
+
+describe('store: view mode (Build / Explode / Pack)', () => {
+  it('defaults to the assembled view', () => {
+    expect(get().viewMode).toBe('assembled');
+  });
+
+  it('switches modes and is purely presentational (no effect on the assembly)', () => {
+    const before = {
+      config: get().config.id,
+      currentHeight: get().currentHeight,
+      uHead: get().uHeadExtension,
+      base: get().baseExtension,
+    };
+    get().setViewMode('exploded');
+    expect(get().viewMode).toBe('exploded');
+    get().setViewMode('packed');
+    expect(get().viewMode).toBe('packed');
+    get().setViewMode('assembled');
+    expect(get().viewMode).toBe('assembled');
+    // The view mode must not perturb the configuration or the height solve.
+    expect(get().config.id).toBe(before.config);
+    expect(get().currentHeight).toBe(before.currentHeight);
+    expect(get().uHeadExtension).toBe(before.uHead);
+    expect(get().baseExtension).toBe(before.base);
+  });
+});
