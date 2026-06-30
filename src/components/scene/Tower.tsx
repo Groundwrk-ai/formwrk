@@ -16,6 +16,7 @@ import { HFrame } from './HFrame';
 import { Tube, Box, DIMS, COLORS } from './primitives';
 import { useVerticalDrag, type VerticalDragHandlers } from './useVerticalDrag';
 import { ThreadedRod, WingNut, PinnedTube, Pin, Extension } from './jackParts';
+import { BAY_QUANTITIES } from '../../logic/bayLayout';
 
 /** Invisible but raycastable cylinder that captures the screwjack drag. */
 function GrabHandle({
@@ -164,8 +165,8 @@ export function Tower() {
 
   const isPropInner = config.baseType === 'propInner';
 
-  // Joist positions along z (on top of the bearers).
-  const joistCount = 9;
+  // Joist positions along z (on top of the bearers). Shared with the BOM.
+  const joistCount = BAY_QUANTITIES.joists;
   const joistZs = Array.from({ length: joistCount }, (_, i) =>
     DIMS.bearerSpan * 0.95 * (i / (joistCount - 1) - 0.5),
   );

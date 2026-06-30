@@ -7,7 +7,13 @@ import {
   currentHeight,
   isThickSlab,
 } from './heightCalc';
-import { simplestValidConfig, validConfigsForInputs, configsForSlab } from './catalogue';
+import {
+  simplestValidConfig,
+  validConfigsForInputs,
+  configsForSlab,
+  validConfigsRanked,
+  simplestAvailableConfig,
+} from './catalogue';
 
 // A representative thin and thick slab thickness.
 const THIN = 200;
@@ -197,5 +203,40 @@ describe('simplest valid config (auto-assemble)', () => {
         expect(isConfigValidForInputs(v, h, THIN)).toBe(true);
       }
     }
+  });
+});
+
+describe('Optimal ranking policy (cross-group order)', () => {
+  // Archetype order: Single < Single+ext < Single+PI < Double < Single+ext+PI < Triple.
+  const isPIext = (id: string) =>
+    CONFIG_BY_ID[id].baseType === 'propInner' && CONFIG_BY_ID[id].rocket !== 'none';
+
+  it('4100mm thin: doubles rank before single+ext+PropInner, which ranks before triples', () => {
+    const ids = validConfigsRanked(4100, THIN).map((c) => c.id);
+    const firstDouble = ids.findIndex((id) => id.startsWith('d-'));
+    const firstPIext = ids.findIndex(isPIext);
+    const firstTriple = ids.findIndex((id) => id.startsWith('t-'));
+    expect(firstDouble).toBeGreaterThanOrEqual(0);
+    expect(firstPIext).toBeGreaterThan(firstDouble);
+    expect(firstTriple).toBeGreaterThan(firstPIext);
+  });
+
+  it('a plain single (FJ, no ext) outranks a single with an extension when both are valid', () => {
+    // 3000mm thin: 6ft FJ (no-ext, valid) must beat 6ft+500 FJ (ext, also valid)
+    const ids = validConfigsRanked(3000, THIN).map((c) => c.id);
+    expect(ids.indexOf('s-6ft-fj')).toBeLessThan(ids.indexOf('s-6ft-500-fj'));
+  });
+
+  it('a single+extension outranks a single+PropInner when both are valid', () => {
+    const ids = validConfigsRanked(3500, THIN).map((c) => c.id);
+    expect(ids.indexOf('s-7ft-500-fj')).toBeLessThan(ids.indexOf('s-6ft-pi'));
+  });
+});
+
+describe('simplestAvailableConfig (safe fallback)', () => {
+  it('is a Flat Jack single for both thin and thick slabs (never Prop Inner)', () => {
+    expect(simplestAvailableConfig(200).baseType).toBe('flatJack');
+    expect(simplestAvailableConfig(250).baseType).toBe('flatJack');
+    expect(simplestAvailableConfig(250).frames.length).toBe(1);
   });
 });

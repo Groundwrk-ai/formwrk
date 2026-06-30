@@ -2,14 +2,16 @@
  * Bill of materials for the current shoring bay.
  *
  * This app's primary job is to ILLUSTRATE THE COMPONENTS, so this turns the
- * active configuration + live screwjack extensions into a readable component
- * list with descriptive names, quantities (per bay: two ladder frames, four
- * legs), and live dimensions (e.g. "U-Head — extended to 250 mm").
+ * active configuration into a readable component list with descriptive names and
+ * per-bay quantities. All quantities come from the SAME `BAY_QUANTITIES` model
+ * the 3D scene uses, so the list and the render can never disagree. Deck joist /
+ * ply quantities are indicative for one illustrative bay (see bayLayout.ts).
  */
 
 import type { FrameConfig } from './configurations';
 import { FRAME_HEIGHTS, ROCKETS } from './frameData';
 import type { HeightRange } from './heightCalc';
+import { BAY_QUANTITIES } from './bayLayout';
 
 export interface BomItem {
   name: string;
@@ -42,14 +44,14 @@ export function buildBom(config: FrameConfig, range: HeightRange): BomSection[] 
   for (const f of config.frames) counts[f] = (counts[f] ?? 0) + 1;
   const frameItems: BomItem[] = Object.entries(counts).map(([size, n]) => ({
     name: `${FT_LABEL[size] ?? size} Frame`,
-    qty: n * 2,
+    qty: n * BAY_QUANTITIES.framesPerLevel,
     detail: `${mm(FRAME_HEIGHTS[size] ?? 0)} high`,
   }));
-  frameItems.push({ name: 'Diagonal cross-brace', qty: 4 * levels });
+  frameItems.push({ name: 'Diagonal cross-brace', qty: BAY_QUANTITIES.crossBracesPerLevel * levels });
 
   const rocketMm = ROCKETS[config.rocket] ?? 0;
   const extensionItems: BomItem[] = rocketMm > 0
-    ? [{ name: `${rocketMm}mm Extension Tube`, qty: 4, detail: `slides over each leg` }]
+    ? [{ name: `${rocketMm}mm Extension Tube`, qty: BAY_QUANTITIES.legs, detail: `slides over each leg` }]
     : [{ name: 'No extension' }];
 
   const isPropInner = config.baseType === 'propInner';
@@ -63,7 +65,7 @@ export function buildBom(config: FrameConfig, range: HeightRange): BomSection[] 
       items: [
         {
           name: 'U-Head Screwjack',
-          qty: 4,
+          qty: BAY_QUANTITIES.legs,
           detail: `range ${mm(range.uHeadMin)}–${mm(range.uHeadMax)}`,
           live: true,
           control: 'uHead',
@@ -75,7 +77,7 @@ export function buildBom(config: FrameConfig, range: HeightRange): BomSection[] 
       items: [
         {
           name: baseName,
-          qty: 4,
+          qty: BAY_QUANTITIES.legs,
           detail: `${isPropInner ? 'pinned' : 'screw-adjust'} · range ${mm(range.baseMin)}–${mm(range.baseMax)}`,
           live: true,
           control: 'base',
@@ -83,11 +85,11 @@ export function buildBom(config: FrameConfig, range: HeightRange): BomSection[] 
       ],
     },
     {
-      title: 'Timber deck',
+      title: 'Timber deck (indicative)',
       items: [
-        { name: 'LVL Bearer', qty: 2, detail: '150 × 77 mm' },
-        { name: 'LVL Joist', detail: '95 × 65 mm' },
-        { name: 'Form-Ply deck', detail: '17 mm' },
+        { name: 'LVL Bearer', qty: BAY_QUANTITIES.bearers, detail: '150 × 77 mm' },
+        { name: 'LVL Joist', qty: BAY_QUANTITIES.joists, detail: '95 × 65 mm · indicative spacing' },
+        { name: 'Form-Ply deck', qty: BAY_QUANTITIES.plySheets, detail: '17 mm · indicative' },
       ],
     },
   ];

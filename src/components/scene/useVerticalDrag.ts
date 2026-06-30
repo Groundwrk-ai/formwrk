@@ -5,9 +5,12 @@
  *
  * Uses window-level pointer listeners during the drag (robust regardless of what
  * the cursor is over) and suspends OrbitControls so the camera doesn't rotate.
+ * The drag is torn down on pointerup AND on pointercancel / window blur / unmount
+ * so an interrupted gesture can never leave OrbitControls disabled or listeners
+ * installed. Cleanup is idempotent.
  */
 import { useThree, type ThreeEvent } from '@react-three/fiber';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -26,9 +29,16 @@ export function useVerticalDrag(opts: VerticalDragOptions) {
   const controls = useThree((s) => s.controls) as { enabled: boolean } | null;
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const plane = useMemo(() => new THREE.Plane(), []);
+  // Holds the teardown for the currently-active drag (if any).
+  const endRef = useRef<(() => void) | null>(null);
+
+  // End any in-progress drag if the component unmounts mid-gesture.
+  useEffect(() => () => endRef.current?.(), []);
 
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
+    endRef.current?.(); // never run two drags at once
+
     const startVal = opts.getStart();
     const startY = e.point.y;
 
@@ -39,8 +49,7 @@ export function useVerticalDrag(opts: VerticalDragOptions) {
 
     if (controls) controls.enabled = false;
 
-    const el = gl.domElement;
-    const rect = el.getBoundingClientRect();
+    const rect = gl.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2();
     const hit = new THREE.Vector3();
 
@@ -55,20 +64,31 @@ export function useVerticalDrag(opts: VerticalDragOptions) {
         opts.setValue(clamp(Math.round(startVal + deltaMm), opts.min, opts.max));
       }
     };
-    const onUp = () => {
+
+    const end = () => {
+      if (endRef.current !== end) return; // idempotent
+      endRef.current = null;
       window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      window.removeEventListener('blur', end);
       if (controls) controls.enabled = true;
+      gl.domElement.style.cursor = '';
     };
+
+    endRef.current = end;
     window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+    window.addEventListener('blur', end);
   };
 
   const onPointerOver = () => {
     gl.domElement.style.cursor = 'ns-resize';
   };
   const onPointerOut = () => {
-    gl.domElement.style.cursor = '';
+    // Don't clear the cursor mid-drag (pointer can leave the handle while dragging).
+    if (!endRef.current) gl.domElement.style.cursor = '';
   };
 
   return { onPointerDown, onPointerOver, onPointerOut };

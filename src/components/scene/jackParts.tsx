@@ -111,7 +111,15 @@ export function ThreadedRod({
   );
 }
 
-/** A smooth galvanised inner tube with a row of pin holes (Prop Inner No 1 — not threaded). */
+/**
+ * A smooth galvanised inner tube with a row of pin holes (Prop Inner No 1 — not threaded).
+ *
+ * Representational simplification: the holes are drawn at an even illustrative
+ * pitch and the pin (drawn by the Tower) sits at the top against the frame. The
+ * adjustable value is treated as continuous; we do NOT snap to discrete hole
+ * positions because the manufacturer's hole pitch isn't specified. If/when that
+ * pitch is confirmed, the Prop Inner extension should snap to valid holes.
+ */
 export function PinnedTube({
   x,
   z,

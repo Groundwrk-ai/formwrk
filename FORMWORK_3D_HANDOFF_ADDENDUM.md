@@ -18,9 +18,13 @@ and matched exactly. The Phase 1 test suite encodes the spreadsheet's min/max fo
    keep the assembly inside the catalogue are offered (`validOptions()` in `catalogue.ts`).
 2. **Assembly UX = click-to-swap for v1**; drag-from-palette-into-3D is deferred (the scene
    model will be built drag-ready).
-3. **Auto-assemble** the simplest valid config on slab input; user can override.
-   Ranking (`compareSimplicity`): fewest frames → class hierarchy
-   `FJ no-ext < FJ+ext < PI no-ext < PI+ext` (sheet note 84) → smaller frames first → id.
+3. **Auto-assemble** the simplest valid config ("Optimal") on slab input; user can override.
+   Ranking (`compareSimplicity` / `archetypeRank` in `catalogue.ts`) is a **confirmed product
+   decision**, NOT derivable from the spreadsheet (which only orders *within* a group):
+   `0 Single (FJ no-ext) → 1 Single + extension → 2 Single + Prop Inner → 3 Double →
+   4 Single + extension + Prop Inner → 5 Triple`, then smaller total frame height, then id.
+   A double is preferred over a single needing BOTH an extension and a prop inner; triples are
+   the last resort. (Test: 4100mm thin → `d-5-6`.)
 4. **Height fidelity = geometry truthful to the calc.** The rendered timber stack totals
    267mm and the tower's overall height equals the displayed number; geometry yields to math.
 5. **Target shown as a ghost soffit plane** at the floor-to-soffit height; the tower top
@@ -55,12 +59,13 @@ v1 (local/sessionStorage is banned by the brief).
   auto-assemble flow, and are unit-tested now.
 - **Touch-first screwjack control (steppers/numeric)** added to the plan per decision 8.
 
-## Open item to confirm
+## Resolved: cross-group "Optimal" ranking
 
-- The cross-group simplicity rule "prefer the simplest valid *single* over any valid double"
-  is assumed (the sheet is explicit only within a group). Example: target 3000mm thin →
-  `6ft Flat Jack`; target 3000mm thick → `7ft Flat Jack` (6ft thick maxes at 2847). Confirm
-  this matches how a config would actually be specced on site.
+The spreadsheet only orders configs *within* a group, so the cross-group ranking was a product
+decision — now **confirmed** (see locked decision 3). A **double outranks a single that needs
+both an extension and a prop inner**; triples are the last resort. `catalogue.ts`
+(`archetypeRank`), its tests (`heightCalc.test.ts`, incl. the 4100mm case), and this addendum
+all agree, and the rule is documented as a product decision rather than spreadsheet-derived.
 
 ## Hosting
 

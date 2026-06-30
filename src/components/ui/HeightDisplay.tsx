@@ -1,7 +1,11 @@
 /**
  * The signature height panel: serviceable min/max range, the target slab height,
- * the live current height, and a validity verdict. The range bar animates as the
- * configuration changes or the screwjacks are dragged.
+ * the live current height, and a verdict.
+ *
+ * The verdict distinguishes "this configuration CAN service the target height"
+ * (serviceable) from "the assembly is CURRENTLY dialled to the target"
+ * (meetsTarget). Green is reserved for the latter so an under-extended tower is
+ * never shown as if it already meets the soffit.
  */
 import { useFormworkStore } from '../../store/formworkStore';
 
@@ -13,10 +17,29 @@ export function HeightDisplay() {
   const currentHeight = useFormworkStore((s) => s.currentHeight);
   const slabHeight = useFormworkStore((s) => s.slabHeight);
   const isValid = useFormworkStore((s) => s.isValid);
+  const meetsTarget = useFormworkStore((s) => s.meetsTarget);
+  const hasValidOption = useFormworkStore((s) => s.hasValidOption);
 
   const span = Math.max(1, range.max - range.min);
   const currentPos = (currentHeight - range.min) / span;
   const targetPos = (slabHeight - range.min) / span;
+  const delta = slabHeight - currentHeight;
+
+  let verdictClass: 'ok' | 'bad' | 'warn';
+  let verdictText: string;
+  if (!hasValidOption) {
+    verdictClass = 'bad';
+    verdictText = '✗ No configuration services this height';
+  } else if (!isValid) {
+    verdictClass = 'bad';
+    verdictText = '✗ Target outside this configuration’s range';
+  } else if (meetsTarget) {
+    verdictClass = 'ok';
+    verdictText = '✓ Assembly set to target';
+  } else {
+    verdictClass = 'warn';
+    verdictText = `Serviceable — ${delta >= 0 ? 'raise' : 'lower'} jacks ${mm(Math.abs(delta))} to reach target`;
+  }
 
   return (
     <section className="card height">
@@ -49,9 +72,7 @@ export function HeightDisplay() {
         <span className="v">{mm(currentHeight)}</span>
       </div>
 
-      <div className={`verdict ${isValid ? 'ok' : 'bad'}`}>
-        {isValid ? '✓ Within serviceable range' : '✗ Target outside range'}
-      </div>
+      <div className={`verdict ${verdictClass}`}>{verdictText}</div>
     </section>
   );
 }

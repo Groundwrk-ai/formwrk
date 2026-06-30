@@ -64,3 +64,9 @@ export const PROP_INNER = {
 
 /** Slab thickness at or above which the slab is "thick". Sheet E31. */
 export const SLAB_THRESHOLD = 221;
+
+/** Defensive bounds for the slab inputs (mm) — keep non-finite / absurd values out of state. */
+export const INPUT_LIMITS = {
+  slabHeightMax: 20000,
+  slabThicknessMax: 2000,
+} as const;

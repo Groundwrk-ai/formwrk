@@ -186,6 +186,10 @@
   background: rgba(217, 79, 79, 0.14);
   color: var(--invalid);
 }
+.verdict.warn {
+  background: rgba(217, 151, 58, 0.14);
+  color: var(--warn);
+}
 
 .disclaimer {
   margin-top: auto;

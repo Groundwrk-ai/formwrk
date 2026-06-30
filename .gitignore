@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local-only adversarial review notes (never publish)
+CLAUDE_CODE_ADVERSARIAL_REVIEW.md

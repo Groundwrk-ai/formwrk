@@ -23,6 +23,7 @@ function NumberInput({
       type="text"
       inputMode="numeric"
       pattern="[0-9]*"
+      maxLength={6}
       value={text}
       aria-label={ariaLabel}
       onChange={(e) => {

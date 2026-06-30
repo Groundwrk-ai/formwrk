@@ -61,6 +61,16 @@ export function simplestValidConfig(slabHeight: number, slabThickness: number): 
   return valid.slice().sort(compareSimplicity)[0];
 }
 
+/**
+ * The simplest configuration that is merely AVAILABLE for the slab (ignoring
+ * height fit). Used as a SAFE fallback so the active assembly is never a
+ * prohibited one (e.g. a Prop Inner on a thick slab) when nothing services the
+ * entered height.
+ */
+export function simplestAvailableConfig(slabThickness: number): FrameConfig {
+  return configsForSlab(slabThickness).slice().sort(compareSimplicity)[0];
+}
+
 /** Valid configs sorted simplest-first (for ranking the palette / showing alternatives). */
 export function validConfigsRanked(slabHeight: number, slabThickness: number): FrameConfig[] {
   return validConfigsForInputs(slabHeight, slabThickness).slice().sort(compareSimplicity);
