@@ -249,6 +249,99 @@ describe('store: custom build panel', () => {
   });
 });
 
+describe('store: setHeight / dialToTarget / resetView', () => {
+  it('setHeight allocates the jacks to reach a height, clamped to the range', () => {
+    get().setHeight(2500);
+    expect(get().currentHeight).toBe(2500);
+    expect(get().uHeadExtension).toBeGreaterThanOrEqual(get().range.uHeadMin);
+    expect(get().baseExtension).toBeLessThanOrEqual(get().range.baseMax);
+
+    get().setHeight(99999); // clamps to range max
+    expect(get().currentHeight).toBe(get().range.max);
+  });
+
+  it('dialToTarget re-dials a drifted assembly back to the target', () => {
+    get().setUHeadExtension(get().range.uHeadMin);
+    get().setBaseExtension(get().range.baseMin);
+    expect(get().meetsTarget).toBe(false);
+    get().dialToTarget();
+    expect(get().currentHeight).toBe(get().slabHeight);
+    expect(get().meetsTarget).toBe(true);
+  });
+
+  it('resetView bumps the nonce', () => {
+    const n = get().viewResetNonce;
+    get().resetView();
+    expect(get().viewResetNonce).toBe(n + 1);
+  });
+});
+
+describe('store: hydrateFromShare', () => {
+  it('restores an inputs workspace', () => {
+    get().hydrateFromShare({
+      panelMode: 'inputs',
+      viewMode: 'exploded',
+      slabThickness: 250,
+      uHead: 200,
+      base: 250,
+      slabHeight: 3500,
+      configId: 's-7ft-fj',
+    });
+    expect(get().panelMode).toBe('inputs');
+    expect(get().viewMode).toBe('exploded');
+    expect(get().slabThickness).toBe(250);
+    expect(get().slabHeight).toBe(3500);
+    expect(get().config.id).toBe('s-7ft-fj');
+    expect(get().towerVisible).toBe(true);
+  });
+
+  it('restores a custom workspace and rebuilds the config from frames', () => {
+    get().hydrateFromShare({
+      panelMode: 'custom',
+      viewMode: 'packed',
+      slabThickness: 200,
+      uHead: 300,
+      base: 120,
+      frames: ['6ft', '5ft'],
+      rocket: 'none',
+      baseType: 'flatJack',
+    });
+    expect(get().panelMode).toBe('custom');
+    expect(get().viewMode).toBe('packed');
+    expect(get().towerVisible).toBe(true);
+    expect(get().config.frames).toEqual(['6ft', '5ft']);
+  });
+
+  it('normalizes an illegal shared frame stack (bigger frame on top) to a legal one', () => {
+    get().hydrateFromShare({
+      panelMode: 'custom', viewMode: 'assembled', slabThickness: 200, uHead: 100, base: 50,
+      frames: ['3ft', '7ft'], rocket: 'none', baseType: 'flatJack',
+    });
+    expect(get().config.frames).toEqual(['3ft']); // 7ft over 3ft is illegal -> dropped
+  });
+
+  it('normalizes 7-7-7 (top slot cannot be 7ft) to a legal double', () => {
+    get().hydrateFromShare({
+      panelMode: 'custom', viewMode: 'assembled', slabThickness: 200, uHead: 100, base: 50,
+      frames: ['7ft', '7ft', '7ft'], rocket: 'none', baseType: 'flatJack',
+    });
+    expect(get().config.frames).toEqual(['7ft', '7ft']); // top 7ft dropped
+  });
+
+  it('coerces a prohibited shared config for the slab (prop inner on a thick slab)', () => {
+    get().hydrateFromShare({
+      panelMode: 'inputs',
+      viewMode: 'assembled',
+      slabThickness: 260, // thick
+      uHead: 100,
+      base: 50,
+      slabHeight: 3000,
+      configId: 's-6ft-pi', // prop inner — prohibited when thick
+    });
+    expect(get().config.baseType).not.toBe('propInner');
+  });
+});
+
 describe('store: view mode (Build / Explode / Pack)', () => {
   it('defaults to the assembled view', () => {
     expect(get().viewMode).toBe('assembled');

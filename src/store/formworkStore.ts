@@ -29,7 +29,8 @@ import {
   type HeightRange,
 } from '../logic/heightCalc';
 import { simplestValidConfig, simplestAvailableConfig } from '../logic/catalogue';
-import { customConfigFrom, applySlot, EMPTY_SLOTS, type Slots } from '../logic/customBuild';
+import { customConfigFrom, applySlot, sizeAllowed, EMPTY_SLOTS, type Slots } from '../logic/customBuild';
+import type { ShareState } from '../logic/shareState';
 import { INPUT_LIMITS } from '../logic/frameData';
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
@@ -186,6 +187,8 @@ export interface FormworkState extends Derived {
   panelMode: PanelMode;
   /** Whether the assembly should render in the 3D scene (false while a custom build is incomplete). */
   towerVisible: boolean;
+  /** Bumped to ask the camera rig to reframe to the default pose for the current view. */
+  viewResetNonce: number;
 
   // Custom-panel selections (bottom → top frame slots + extension/base choices). These
   // are the Custom panel's persistent selection; they survive switching to Inputs and back.
@@ -205,6 +208,10 @@ export interface FormworkState extends Derived {
   setConfig: (config: FrameConfig) => void;
   setUHeadExtension: (v: number) => void;
   setBaseExtension: (v: number) => void;
+  /** Set the live assembled height directly (allocates the jacks), clamped to the range. */
+  setHeight: (h: number) => void;
+  /** Inputs only: dial the jacks so the assembly meets the target slab height. */
+  dialToTarget: () => void;
   /** Re-pick the simplest valid config for the current inputs (no-op if none fits). */
   autoAssemble: () => void;
   /** Switch the viewport presentation (assembled / exploded / packed). */
@@ -217,6 +224,10 @@ export interface FormworkState extends Derived {
   setCustomRocket: (rocket: string) => void;
   /** Set the custom base choice ('flatJack' | 'propInner'). */
   setCustomBaseType: (baseType: BaseType) => void;
+  /** Reframe the camera to the default pose for the current view. */
+  resetView: () => void;
+  /** Restore the active workspace from a decoded shareable-link state. */
+  hydrateFromShare: (share: ShareState) => void;
 }
 
 // Sensible defaults: 2800mm soffit, 200mm (thin) slab -> simplest valid = 6ft Flat Jack.
@@ -274,6 +285,7 @@ const snapshot = (s: FormworkState): PanelSnapshot => ({
 export const useFormworkStore = create<FormworkState>((set, get) => ({
   ...INPUTS_DEFAULT,
   panelMode: 'inputs',
+  viewResetNonce: 0,
   customFrames: EMPTY_SLOTS,
   customRocket: 'none',
   customBaseType: 'flatJack',
@@ -351,6 +363,26 @@ export const useFormworkStore = create<FormworkState>((set, get) => ({
     }
   },
 
+  // Set the live height by allocating the jacks to reach it (base first, then U-head),
+  // clamped to the config's range. Drives the draggable height track in both panels.
+  setHeight: (h) => {
+    if (!Number.isFinite(h)) return;
+    const s = get();
+    const target = clamp(Math.round(h), s.range.min, s.range.max);
+    const { uHeadExtension, baseExtension } = allocateExtensionsToTarget(s.config, s.slabThickness, target);
+    if (s.panelMode === 'custom') {
+      set({ uHeadExtension, baseExtension, currentHeight: calcCurrentHeight(s.config, uHeadExtension, baseExtension) });
+    } else {
+      set({ uHeadExtension, baseExtension, ...derive(s.config, s.slabThickness, s.slabHeight, uHeadExtension, baseExtension) });
+    }
+  },
+
+  dialToTarget: () => {
+    const s = get();
+    if (s.panelMode !== 'inputs') return;
+    get().setHeight(s.slabHeight);
+  },
+
   autoAssemble: () => {
     const s = get();
     const next = simplestValidConfig(s.slabHeight, s.slabThickness);
@@ -389,6 +421,64 @@ export const useFormworkStore = create<FormworkState>((set, get) => ({
     const s = get();
     if (s.panelMode !== 'custom') return;
     set({ customBaseType: baseType, ...resolveCustom(s.customFrames, s.customRocket, baseType, s.slabThickness, 0, 0, s.config) });
+  },
+
+  resetView: () => set((s) => ({ viewResetNonce: s.viewResetNonce + 1 })),
+
+  // Restore the ACTIVE workspace from a shared link. The other panel is reset to its
+  // default (a link captures one view). All values are validated / clamped defensively.
+  hydrateFromShare: (share) => {
+    const viewMode: ViewMode = share.viewMode;
+    const slabThickness = clamp(Math.round(share.slabThickness), 0, INPUT_LIMITS.slabThicknessMax);
+    if (share.panelMode === 'custom') {
+      // Normalize the decoded frames through the real slot rules (a hand-edited hash could
+      // otherwise carry an illegal stack, which the picker would show as active-yet-disabled).
+      let customFrames: Slots = EMPTY_SLOTS;
+      for (let i = 0; i < 3; i++) {
+        const size = share.frames?.[i];
+        if (!size || !sizeAllowed(customFrames, i, size)) break;
+        customFrames = applySlot(customFrames, i, size);
+      }
+      const customRocket = share.rocket ?? 'none';
+      const customBaseType = share.baseType ?? 'flatJack';
+      set({
+        panelMode: 'custom',
+        viewMode,
+        viewResetNonce: get().viewResetNonce + 1,
+        slabThickness,
+        slabHeight: DEFAULT_HEIGHT,
+        customFrames,
+        customRocket,
+        customBaseType,
+        savedInputs: null,
+        savedCustom: null,
+        ...resolveCustom(customFrames, customRocket, customBaseType, slabThickness, share.uHead, share.base, initialConfig),
+      });
+    } else {
+      const wanted = share.configId ? CONFIG_BY_ID[share.configId] : undefined;
+      const config = wanted && isAvailableForSlab(wanted, slabThickness) ? wanted : simplestAvailableConfig(slabThickness);
+      const slabHeight = clamp(Math.round(share.slabHeight ?? DEFAULT_HEIGHT), 0, INPUT_LIMITS.slabHeightMax);
+      const range = calcHeightRange(config, slabThickness);
+      const uHeadExtension = clamp(Math.round(share.uHead), range.uHeadMin, range.uHeadMax);
+      const baseExtension = clamp(Math.round(share.base), range.baseMin, range.baseMax);
+      set({
+        panelMode: 'inputs',
+        viewMode,
+        viewResetNonce: get().viewResetNonce + 1,
+        slabThickness,
+        slabHeight,
+        config,
+        uHeadExtension,
+        baseExtension,
+        towerVisible: true,
+        customFrames: EMPTY_SLOTS,
+        customRocket: 'none',
+        customBaseType: 'flatJack',
+        savedInputs: null,
+        savedCustom: null,
+        ...derive(config, slabThickness, slabHeight, uHeadExtension, baseExtension),
+      });
+    }
   },
 }));
 

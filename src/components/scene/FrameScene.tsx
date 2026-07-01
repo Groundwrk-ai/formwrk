@@ -21,6 +21,7 @@ function CameraRig({ controlsRef }: { controlsRef: RefObject<any> }) {
   const frameCount = useFormworkStore((s) => s.config.frames.length);
   const viewMode = useFormworkStore((s) => s.viewMode);
   const panelMode = useFormworkStore((s) => s.panelMode);
+  const viewResetNonce = useFormworkStore((s) => s.viewResetNonce);
   const camera = useThree((s) => s.camera);
 
   useEffect(() => {
@@ -53,8 +54,8 @@ function CameraRig({ controlsRef }: { controlsRef: RefObject<any> }) {
       gsap.to(c.target, { x: targetX, y: targetY, z: 0, duration: 0.85, ease: 'power2.inOut', onUpdate: () => c.update() });
     }
     // panelMode is a dep so switching tabs reframes even when both panels' towers happen
-    // to share a frame count (e.g. two different single-frame builds of different heights).
-  }, [frameCount, viewMode, panelMode, camera, controlsRef]);
+    // to share a frame count; viewResetNonce lets the "Reset view" button force a reframe.
+  }, [frameCount, viewMode, panelMode, viewResetNonce, camera, controlsRef]);
 
   return null;
 }

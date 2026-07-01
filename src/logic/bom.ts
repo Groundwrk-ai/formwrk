@@ -78,7 +78,7 @@ export function buildBom(config: FrameConfig, range: HeightRange): BomSection[] 
         {
           name: baseName,
           qty: BAY_QUANTITIES.legs,
-          detail: `${isPropInner ? 'pinned' : 'screw-adjust'} · range ${mm(range.baseMin)}–${mm(range.baseMax)}`,
+          detail: `${isPropInner ? 'pinned · ' : ''}range ${mm(range.baseMin)}–${mm(range.baseMax)}`,
           live: true,
           control: 'base',
         },

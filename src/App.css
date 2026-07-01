@@ -177,6 +177,71 @@
   color: var(--text-dim);
 }
 
+/* Draggable height track */
+.track.draggable {
+  cursor: ew-resize;
+  touch-action: none;
+  height: 14px;
+}
+.track.draggable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.track .thumb {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+.dial-btn {
+  align-self: flex-start;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: #6bb0ee;
+  background: rgba(26, 111, 196, 0.14);
+  border: 1px solid rgba(26, 111, 196, 0.4);
+  border-radius: 7px;
+  padding: 6px 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.dial-btn:hover {
+  background: rgba(26, 111, 196, 0.24);
+  color: #fff;
+}
+
+/* Shared drag slider (height track + Head/Base extension) with a centred value bubble */
+.rslider {
+  position: relative;
+  padding-top: 22px;
+}
+.rslider-bubble {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ext-slider {
+  margin-top: 6px;
+}
+
 .verdict {
   display: flex;
   align-items: center;
@@ -213,6 +278,22 @@
   font-size: 11px;
   color: var(--text-dim);
   line-height: 1.5;
+}
+.share-link {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.share-link:hover {
+  color: var(--text);
+  border-color: var(--accent);
 }
 
 /* Components / materials list (the primary panel) */
@@ -383,6 +464,68 @@
   padding: 4px 2px;
 }
 
+/* Frame picker — visual mini-previews (bottom-aligned so taller frames stand taller) */
+.frame-opts {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.frame-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  padding: 5px 6px 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.frame-opt:hover:not(:disabled):not(.active) {
+  border-color: var(--accent);
+}
+.frame-opt.active {
+  border-color: var(--accent);
+  background: rgba(26, 111, 196, 0.14);
+}
+.frame-opt:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.frame-opt-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.frame-opt.active .frame-opt-label {
+  color: var(--text);
+}
+.frame-none-glyph {
+  width: 22px;
+  height: 14px;
+  border: 1.5px dashed var(--border);
+  border-radius: 3px;
+}
+/* First column of the middle/top rows: "None" stacked above the 3ft box */
+.frame-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.frame-opt.frame-none {
+  padding: 5px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.frame-opt.frame-none.active {
+  color: var(--text);
+}
+
 /* Config list (Other tab) */
 .config-list {
   display: flex;
@@ -532,6 +675,35 @@
 .vm-btn.active {
   background: var(--accent);
   color: #fff;
+}
+
+/* Viewport action buttons (top-left overlay): copy link + reset view */
+.viewport-controls {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 5;
+  display: flex;
+  gap: 6px;
+}
+.vc-btn {
+  padding: 7px 11px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--text-dim);
+  background: rgba(26, 30, 36, 0.82);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  -webkit-tap-highlight-color: transparent;
+}
+.vc-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
 }
 
 /* Floating 3D labels (drei <Html>) — exploded component tags */

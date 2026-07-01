@@ -8,9 +8,9 @@
  * never shown as if it already meets the soffit.
  */
 import { useFormworkStore } from '../../store/formworkStore';
+import { HeightTrack } from './HeightTrack';
 
 const mm = (v: number) => `${Math.round(v)} mm`;
-const pct = (v: number) => `${Math.max(0, Math.min(100, v * 100)).toFixed(1)}%`;
 /** Bracketed, italicised amount Min/Max sits below/above Current (rendered via .variance). */
 const varLabel = (delta: number, sign: '−' | '+') => (delta <= 0 ? '(0 mm)' : `(${sign}${delta} mm)`);
 
@@ -21,10 +21,8 @@ export function HeightDisplay() {
   const isValid = useFormworkStore((s) => s.isValid);
   const meetsTarget = useFormworkStore((s) => s.meetsTarget);
   const hasValidOption = useFormworkStore((s) => s.hasValidOption);
+  const dialToTarget = useFormworkStore((s) => s.dialToTarget);
 
-  const span = Math.max(1, range.max - range.min);
-  const currentPos = (currentHeight - range.min) / span;
-  const targetPos = (slabHeight - range.min) / span;
   const delta = slabHeight - currentHeight;
   const belowMin = Math.round(currentHeight - range.min);
   const aboveMax = Math.round(range.max - currentHeight);
@@ -58,10 +56,7 @@ export function HeightDisplay() {
         <span className="v"><span className="variance">{varLabel(aboveMax, '+')}</span>{mm(range.max)}</span>
       </div>
 
-      <div className="track" role="img" aria-label="serviceable range">
-        <div className="fill" style={{ width: pct(currentPos) }} />
-        <div className="target" style={{ left: pct(targetPos) }} />
-      </div>
+      <HeightTrack showTarget />
       <div className="range-row">
         <span>{mm(range.min)}</span>
         <span>{mm(range.max)}</span>
@@ -75,6 +70,12 @@ export function HeightDisplay() {
         <span className="k">Input height</span>
         <span className="v">{mm(slabHeight)}</span>
       </div>
+
+      {isValid && !meetsTarget && (
+        <button type="button" className="dial-btn" onClick={dialToTarget}>
+          ⇧ Dial jacks to target
+        </button>
+      )}
 
       <div className={`verdict ${verdictClass}`}>{verdictText}</div>
     </section>

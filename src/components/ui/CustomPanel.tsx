@@ -20,11 +20,12 @@ import {
 } from '../../logic/customBuild';
 import { NumberInput } from './NumberInput';
 import { ExtensionStepper } from './ExtensionStepper';
+import { HeightTrack } from './HeightTrack';
+import { FrameGlyph } from './FrameGlyph';
 import type { HeightRange } from '../../logic/heightCalc';
 
 const mm = (v: number) => `${Math.round(v)} mm`;
 const sizeLabel = (s: string) => s.replace('ft', 'Ft');
-const pct = (v: number) => `${Math.max(0, Math.min(100, v * 100)).toFixed(1)}%`;
 /** Bracketed, italicised amount Min/Max sits below/above Current (rendered via .variance). */
 const varLabel = (delta: number, sign: '−' | '+') => (delta <= 0 ? '(0 mm)' : `(${sign}${delta} mm)`);
 
@@ -50,38 +51,51 @@ function FramesPicker() {
       {[0, 1, 2].map((i) => {
         const enabled = slotEnabled(customFrames, i);
         const current = customFrames[i];
+        const optional = i > 0; // middle/top can be cleared (None, or re-clicking the active one)
+
+        const frameButton = (size: string) => {
+          const active = current === size;
+          const allowed = enabled && sizeAllowed(customFrames, i, size);
+          return (
+            <button
+              key={size}
+              type="button"
+              className={`frame-opt${active ? ' active' : ''}`}
+              disabled={!allowed && !active}
+              aria-pressed={active}
+              onClick={() => setCustomSlot(i, optional && active ? null : size)}
+            >
+              <FrameGlyph size={size} tone={active ? 'active' : allowed ? 'enabled' : 'disabled'} />
+              <span className="frame-opt-label">{sizeLabel(size)}</span>
+            </button>
+          );
+        };
+
         return (
           <div key={i} className="slot">
             <span className="slot-label">
               {SLOT_LABELS[i]}
-              {i > 0 ? ' · optional' : ''}
+              {optional ? ' · optional' : ''}
             </span>
-            <div className="chips">
-              {FRAME_SIZES.map((size) => {
-                const active = current === size;
-                const allowed = enabled && sizeAllowed(customFrames, i, size);
-                return (
+            <div className="frame-opts">
+              {optional ? (
+                // "None" sits above the 3ft box (in the headroom the taller frames leave).
+                <div className="frame-col">
                   <button
-                    key={size}
                     type="button"
-                    className={`chip${active ? ' active' : ''}`}
-                    disabled={!allowed}
-                    onClick={() => setCustomSlot(i, size)}
+                    className={`frame-opt frame-none${current == null ? ' active' : ''}`}
+                    disabled={!enabled}
+                    aria-pressed={current == null}
+                    onClick={() => setCustomSlot(i, null)}
                   >
-                    {sizeLabel(size)}
+                    None
                   </button>
-                );
-              })}
-              {i > 0 && (
-                <button
-                  type="button"
-                  className={`chip${current == null ? ' active' : ''}`}
-                  disabled={!enabled}
-                  onClick={() => setCustomSlot(i, null)}
-                >
-                  None
-                </button>
+                  {frameButton('3ft')}
+                </div>
+              ) : (
+                frameButton('3ft')
               )}
+              {FRAME_SIZES.filter((s) => s !== '3ft').map(frameButton)}
             </div>
           </div>
         );
@@ -178,7 +192,7 @@ function BaseSection({ complete, range }: { complete: boolean; range: HeightRang
             <span className="bom-name">{active === 'propInner' ? 'Prop Inner No 1' : 'Flat Jack Screwjack'}</span>
           </div>
           <div className="bom-detail">
-            {active === 'propInner' ? 'pinned' : 'screw-adjust'} · range {mm(range.baseMin)}–{mm(range.baseMax)}
+            {active === 'propInner' ? 'pinned · ' : ''}range {mm(range.baseMin)}–{mm(range.baseMax)}
           </div>
           <ExtensionStepper which="base" />
         </div>
@@ -218,8 +232,6 @@ function CustomHeight({
   range: HeightRange;
   currentHeight: number;
 }) {
-  const span = Math.max(1, range.max - range.min);
-  const currentPos = (currentHeight - range.min) / span;
   const belowMin = Math.round(currentHeight - range.min);
   const aboveMax = Math.round(range.max - currentHeight);
 
@@ -236,9 +248,7 @@ function CustomHeight({
             <span className="k">Max</span>
             <span className="v"><span className="variance">{varLabel(aboveMax, '+')}</span>{mm(range.max)}</span>
           </div>
-          <div className="track" role="img" aria-label="serviceable range">
-            <div className="fill" style={{ width: pct(currentPos) }} />
-          </div>
+          <HeightTrack showTarget={false} />
           <div className="range-row">
             <span>{mm(range.min)}</span>
             <span>{mm(range.max)}</span>
