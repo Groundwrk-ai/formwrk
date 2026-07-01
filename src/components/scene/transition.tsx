@@ -31,7 +31,7 @@ import {
 } from 'react';
 import { useFrame } from '@react-three/fiber';
 import gsap from 'gsap';
-import type { Group, Mesh, Material } from 'three';
+import type { Group, Mesh, Material, MeshStandardMaterial } from 'three';
 import { useFormworkStore, type ViewMode } from '../../store/formworkStore';
 
 export interface ModeWeights {
@@ -194,14 +194,26 @@ export function GhostController({
       const mat = (obj as Mesh).material as Material | Material[] | undefined;
       if (!mat) return;
       const mats = Array.isArray(mat) ? mat : [mat];
-      for (const mm of mats) {
-        if (!(mm as { isMeshStandardMaterial?: boolean }).isMeshStandardMaterial) continue;
+      for (const raw of mats) {
+        const mm = raw as MeshStandardMaterial;
+        if (!mm.isMeshStandardMaterial) continue;
+        // Remember the original PBR values once, so we can restore them.
+        const ud = mm.userData as { gMet?: number; gRough?: number; gEnv?: number };
+        if (ud.gMet === undefined) {
+          ud.gMet = mm.metalness;
+          ud.gRough = mm.roughness;
+          ud.gEnv = mm.envMapIntensity;
+        }
         mm.transparent = active;
-        (mm as Material & { opacity: number }).opacity = active ? opacity : 1;
-        // Keep depth-writing ON while ghosted: the frame occludes itself so
-        // overlapping tubes don't stack up alpha into patchy "solid" regions —
-        // the ghost reads as one even translucent shell.
+        mm.opacity = active ? opacity : 1;
+        // Keep depth-writing ON while ghosted so the frame occludes itself (no
+        // stacked-alpha patches), AND flatten to matte as it ghosts so metallic
+        // highlights / reflections don't make some tubes read "solid" — the ghost
+        // stays one even translucent shell.
         mm.depthWrite = true;
+        mm.metalness = lerp(ud.gMet ?? 0, 0, ghost);
+        mm.roughness = lerp(ud.gRough ?? 1, 1, ghost);
+        mm.envMapIntensity = lerp(ud.gEnv ?? 1, 0, ghost);
       }
     });
     wasActive.current = active;

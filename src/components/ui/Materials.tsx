@@ -67,23 +67,26 @@ export function Materials() {
             ) : null}
           </div>
 
-          {sections
-            .filter((section) => section.title !== 'Timber deck (indicative)')
-            .map((section) => (
-            <div key={section.title} className="bom-section">
-              <div className="bom-section-title">{section.title}</div>
-              {section.items.map((item, i) => (
-                <div key={i} className={`bom-item${item.live ? ' live' : ''}`}>
-                  <div className="bom-item-main">
-                    <span className="bom-name">{item.name}</span>
-                    {item.qty ? <span className="bom-qty">×{item.qty}</span> : null}
+          {sections.map((section) => {
+            // The timber deck is indicative — keep it (its depths feed the overall
+            // height) but don't show the (meaningless) per-bay quantities.
+            const hideQty = section.title === 'Timber deck (indicative)';
+            return (
+              <div key={section.title} className="bom-section">
+                <div className="bom-section-title">{section.title}</div>
+                {section.items.map((item, i) => (
+                  <div key={i} className={`bom-item${item.live ? ' live' : ''}`}>
+                    <div className="bom-item-main">
+                      <span className="bom-name">{item.name}</span>
+                      {!hideQty && item.qty ? <span className="bom-qty">×{item.qty}</span> : null}
+                    </div>
+                    {item.detail ? <div className="bom-detail">{item.detail}</div> : null}
+                    {item.control ? <ExtensionStepper which={item.control} /> : null}
                   </div>
-                  {item.detail ? <div className="bom-detail">{item.detail}</div> : null}
-                  {item.control ? <ExtensionStepper which={item.control} /> : null}
-                </div>
-              ))}
-            </div>
-          ))}
+                ))}
+              </div>
+            );
+          })}
         </>
       )}
     </section>

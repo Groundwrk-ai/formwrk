@@ -120,26 +120,26 @@ function PostStillage({ length, width, height }: { length: number; width: number
   );
 }
 
-/** A settled pile of tubes laid horizontally — rests on the floor, nests into valleys. */
-function RestingBundle({ length, radius, color, perLayer, layers, y0 = 0.145 }: { length: number; radius: number; color: string; perLayer: number; layers: number; y0?: number }) {
+/** A settled pile of EXACTLY `count` tubes laid horizontally — fills layer by
+ * layer (each centred), resting on the floor and nesting into valleys. */
+function RestingBundle({ length, radius, color, count, perLayer, y0 = 0.145 }: { length: number; radius: number; color: string; count: number; perLayer: number; y0?: number }) {
   const items: ReactNode[] = [];
   const dy = radius * 1.7; // layers nest tight (not floating)
   const zStep = radius * 2.15;
-  const zSpan = (perLayer - 1) * zStep;
-  for (let l = 0; l < layers; l++) {
-    for (let c = 0; c < perLayer; c++) {
-      const i = l * perLayer + c;
-      const z = c * zStep - zSpan / 2 + (l % 2) * (zStep / 2); // nest into the valley below
-      const y = y0 + l * dy + (((i * 13) % 5) / 5 - 0.4) * radius * 0.4;
-      const xj = (((i * 41) % 7) / 7 - 0.5) * 0.05;
-      const len = length * (0.92 + ((i * 7) % 5) / 40);
-      items.push(
-        <mesh key={i} position={[xj, y, z]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
-          <cylinderGeometry args={[radius, radius, len, 9]} />
-          <meshStandardMaterial color={color} metalness={0.7} roughness={0.42} />
-        </mesh>,
-      );
-    }
+  for (let i = 0; i < count; i++) {
+    const layer = Math.floor(i / perLayer);
+    const idx = i % perLayer;
+    const inLayer = Math.min(perLayer, count - layer * perLayer);
+    const z = (idx - (inLayer - 1) / 2) * zStep + (layer % 2) * (zStep / 2); // centre + valley nest
+    const y = y0 + layer * dy + (((i * 13) % 5) / 5 - 0.4) * radius * 0.4;
+    const xj = (((i * 41) % 7) / 7 - 0.5) * 0.05;
+    const len = length * (0.92 + ((i * 7) % 5) / 40);
+    items.push(
+      <mesh key={i} position={[xj, y, z]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
+        <cylinderGeometry args={[radius, radius, len, 9]} />
+        <meshStandardMaterial color={color} metalness={0.7} roughness={0.42} />
+      </mesh>,
+    );
   }
   return <group>{items}</group>;
 }
@@ -163,15 +163,21 @@ function Strap({ x, top, width }: { x: number; top: number; width: number }) {
   );
 }
 
-function SteelStillage({ contents }: { contents: YardContents }) {
+function SteelStillage({ contents, count }: { contents: YardContents; count: number }) {
+  const spec =
+    contents === 'braces'
+      ? { length: 1.2, radius: 0.015, color: GALV, perLayer: 6 }
+      : contents === 'extensions'
+        ? { length: 1.24, radius: 0.026, color: GALV, perLayer: 5 }
+        : { length: 1.16, radius: 0.028, color: '#c2c8d0', perLayer: 5 };
+  const layers = Math.max(1, Math.ceil(count / spec.perLayer));
+  const bundleTop = 0.145 + (layers - 1) * spec.radius * 1.7 + spec.radius + 0.03;
   return (
     <group>
       <PostStillage length={1.35} width={0.92} height={0.6} />
-      {contents === 'braces' && <RestingBundle length={1.2} radius={0.015} color={GALV} perLayer={8} layers={6} />}
-      {contents === 'extensions' && <RestingBundle length={1.24} radius={0.026} color={GALV} perLayer={5} layers={5} />}
-      {contents === 'propInners' && <RestingBundle length={1.16} radius={0.028} color="#c2c8d0" perLayer={5} layers={4} />}
+      <RestingBundle length={spec.length} radius={spec.radius} color={spec.color} count={count} perLayer={spec.perLayer} />
       {[-0.34, 0.34].map((x) => (
-        <Strap key={x} x={x} top={0.36} width={0.9} />
+        <Strap key={x} x={x} top={bundleTop} width={0.9} />
       ))}
     </group>
   );
@@ -262,35 +268,33 @@ function LyingJack({ contents, flip, rust }: { contents: YardContents; flip: num
   );
 }
 
-/** The cage's contents: jacks lying flat, alternating top-to-tail, settled under
- * gravity — layers nest tight and offset into the valley of the layer below, so
+/** The cage's contents: EXACTLY `count` jacks lying flat, alternating top-to-tail,
+ * settled under gravity — layers nest tight and offset into the valley below, so
  * the pile reads as resting rather than floating in a grid. */
-function LyingJacks({ contents }: { contents: YardContents }) {
-  const rows = 5;
-  const layers = 4;
+function LyingJacks({ contents, count }: { contents: YardContents; count: number }) {
+  const perLayer = 5;
   const items: ReactNode[] = [];
   const zStep = 0.15;
-  const zSpan = (rows - 1) * zStep;
   const dy = 0.05; // ~ one rod diameter: layers rest on each other
-  for (let l = 0; l < layers; l++) {
-    for (let r = 0; r < rows; r++) {
-      const i = l * rows + r;
-      const flip = (r + l) % 2 === 0 ? 1 : -1; // top-to-tail
-      const z = r * zStep - zSpan / 2 + (l % 2) * (zStep / 2); // nest into the valley below
-      const y = 0.13 + l * dy + (((i * 13) % 5) / 5 - 0.4) * 0.012;
-      const jx = (((i * 53) % 9) / 9 - 0.5) * 0.05; // deterministic jitter
-      const yaw = (((i * 29) % 7) / 7 - 0.5) * 0.16;
-      items.push(
-        <group key={i} position={[jx, y, z]} rotation={[0, yaw, 0]}>
-          <LyingJack contents={contents} flip={flip} rust={i % 4 === 0} />
-        </group>,
-      );
-    }
+  for (let i = 0; i < count; i++) {
+    const layer = Math.floor(i / perLayer);
+    const idx = i % perLayer;
+    const inLayer = Math.min(perLayer, count - layer * perLayer);
+    const flip = (idx + layer) % 2 === 0 ? 1 : -1; // top-to-tail
+    const z = (idx - (inLayer - 1) / 2) * zStep + (layer % 2) * (zStep / 2); // centre + valley nest
+    const y = 0.13 + layer * dy + (((i * 13) % 5) / 5 - 0.4) * 0.012;
+    const jx = (((i * 53) % 9) / 9 - 0.5) * 0.05; // deterministic jitter
+    const yaw = (((i * 29) % 7) / 7 - 0.5) * 0.16;
+    items.push(
+      <group key={i} position={[jx, y, z]} rotation={[0, yaw, 0]}>
+        <LyingJack contents={contents} flip={flip} rust={i % 4 === 0} />
+      </group>,
+    );
   }
   return <group>{items}</group>;
 }
 
-function HeavyCage({ contents }: { contents: YardContents }) {
+function HeavyCage({ contents, count }: { contents: YardContents; count: number }) {
   const W = 0.95;
   const D = 0.95;
   const hw = W / 2;
@@ -328,7 +332,7 @@ function HeavyCage({ contents }: { contents: YardContents }) {
       <MeshFace w={0.85} h={0.72} position={[hw - 0.02, 0.49, 0]} rotation={[0, Math.PI / 2, 0]} />
       <MeshFace w={0.85} h={0.72} position={[-hw + 0.02, 0.49, 0]} rotation={[0, Math.PI / 2, 0]} />
       {/* contents */}
-      <LyingJacks contents={contents} />
+      <LyingJacks contents={contents} count={count} />
     </group>
   );
 }
@@ -339,12 +343,12 @@ function HeavyCage({ contents }: { contents: YardContents }) {
 // legs nest into the valley of the layer below (hexagonal packing) — a stack of
 // three reads as ~two columns of tubes, the middle frame tucked behind.
 
-function FrameStack({ size }: { size?: string }) {
+function FrameStack({ size, count }: { size?: string; count: number }) {
   const key = size ?? '6ft';
   const frameLen = (FRAME_HEIGHTS[key] ?? 1830) / 1000; // real frame length (its standing height)
   const hx = DIMS.legSpacing / 2;
   const r = DIMS.legRadius;
-  const layers = 5;
+  const layers = Math.max(1, count); // render the ACTUAL number of frames
   const offX = r; // lateral nest offset (hexagonal packing)
   const dyNest = r * 1.732; // vertical nest step (< a full tube diameter)
   const y0 = 0.14;
@@ -387,9 +391,9 @@ function FrameStack({ size }: { size?: string }) {
 function Container({ c }: { c: YardContainer }) {
   return (
     <group position={[c.pos[0], 0, c.pos[1]]}>
-      {c.kind === 'steelStillage' && <SteelStillage contents={c.contents} />}
-      {c.kind === 'heavyCage' && <HeavyCage contents={c.contents} />}
-      {c.kind === 'frameStack' && <FrameStack size={c.size} />}
+      {c.kind === 'steelStillage' && <SteelStillage contents={c.contents} count={c.quantity} />}
+      {c.kind === 'heavyCage' && <HeavyCage contents={c.contents} count={c.quantity} />}
+      {c.kind === 'frameStack' && <FrameStack size={c.size} count={c.quantity} />}
       <Html position={[0, c.labelY, 0]} center distanceFactor={9} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
         <div className={`yard-label${c.inUse ? '' : ' dim'}`}>
           {c.label}
