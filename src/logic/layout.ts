@@ -65,9 +65,12 @@ const seg = (bottomM: number, heightMm: number): Segment => {
 export function computeLayout({ config, uHeadExtension, baseExtension, slabHeight }: LayoutInputs): AssemblyLayout {
   const base = seg(0, baseExtension);
 
+  // Stack largest frame at the bottom, smallest at the top (visual/erection
+  // order). The height sum is order-independent, so this only affects rendering.
+  const stacked = [...config.frames].sort((a, b) => (FRAME_HEIGHTS[b] ?? 0) - (FRAME_HEIGHTS[a] ?? 0));
   const frames: FrameSegment[] = [];
   let cursor = base.top;
-  config.frames.forEach((size, index) => {
+  stacked.forEach((size, index) => {
     const h = m(FRAME_HEIGHTS[size] ?? 0);
     frames.push({ bottom: cursor, top: cursor + h, height: h, size, index });
     cursor += h;

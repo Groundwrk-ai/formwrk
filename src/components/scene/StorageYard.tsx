@@ -391,7 +391,10 @@ function Container({ c }: { c: YardContainer }) {
       {c.kind === 'heavyCage' && <HeavyCage contents={c.contents} />}
       {c.kind === 'frameStack' && <FrameStack size={c.size} />}
       <Html position={[0, c.labelY, 0]} center distanceFactor={9} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-        <div className={`yard-label${c.inUse ? '' : ' dim'}`}>{c.label}</div>
+        <div className={`yard-label${c.inUse ? '' : ' dim'}`}>
+          {c.label}
+          <span className="yard-qty">×{c.quantity}</span>
+        </div>
       </Html>
     </group>
   );

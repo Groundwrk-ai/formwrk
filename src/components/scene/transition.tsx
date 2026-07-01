@@ -198,7 +198,10 @@ export function GhostController({
         if (!(mm as { isMeshStandardMaterial?: boolean }).isMeshStandardMaterial) continue;
         mm.transparent = active;
         (mm as Material & { opacity: number }).opacity = active ? opacity : 1;
-        mm.depthWrite = !active;
+        // Keep depth-writing ON while ghosted: the frame occludes itself so
+        // overlapping tubes don't stack up alpha into patchy "solid" regions —
+        // the ghost reads as one even translucent shell.
+        mm.depthWrite = true;
       }
     });
     wasActive.current = active;

@@ -13,6 +13,7 @@
  * from the supplied stillage photos.
  */
 import type { FrameConfig } from './configurations';
+import { BAY_QUANTITIES } from './bayLayout';
 
 export type YardKind = 'frameStack' | 'steelStillage' | 'heavyCage' | 'timberStack';
 export type YardContents =
@@ -31,6 +32,8 @@ export interface YardContainer {
   label: string;
   /** Approx items a full container holds (illustrative, not a take-off). */
   capacity?: number;
+  /** How many of this item the current render actually uses (the take-off, per bay). */
+  quantity: number;
   /** Frame size for a frameStack, e.g. '6ft'. */
   size?: string;
   /** Floor position [x, z] in metres. */
@@ -56,14 +59,20 @@ const sizeLabel = (size: string): string => size.replace('ft', 'Ft');
 export function computeYard(config: FrameConfig): YardContainer[] {
   const containers: YardContainer[] = [];
 
-  // Back row — a strapped stack of frames for each distinct size used.
-  const sizes = [...new Set(config.frames)];
-  sizes.forEach((size, i) => {
+  const levels = config.frames.length;
+  const legs = BAY_QUANTITIES.legs;
+
+  // Back row — a strapped stack of frames for each distinct size used. Quantity =
+  // (count of that size) × 2 ladder frames per level, matching the BOM.
+  const counts: Record<string, number> = {};
+  for (const f of config.frames) counts[f] = (counts[f] ?? 0) + 1;
+  Object.keys(counts).forEach((size, i) => {
     containers.push({
       id: `frames-${size}`,
       kind: 'frameStack',
       contents: 'frames',
       label: `${sizeLabel(size)} Frames`,
+      quantity: counts[size] * BAY_QUANTITIES.framesPerLevel,
       size,
       pos: [X0 + i * DX, Z_FRAMES],
       labelY: 1.65,
@@ -71,16 +80,16 @@ export function computeYard(config: FrameConfig): YardContainer[] {
     });
   });
 
-  // The standard kit — steel stillages, heavy-duty cages and the timber stack —
-  // laid out in two rows of three.
+  // The standard kit — steel stillages and heavy-duty cages — in two rows of three.
+  // Quantities are the per-bay take-off (matching the BOM), NOT the container capacity.
   const usesExtension = config.rocket !== 'none';
   const isPropInner = config.baseType === 'propInner';
   const kit: Array<Omit<YardContainer, 'pos' | 'labelY'>> = [
-    { id: 'braces', kind: 'steelStillage', contents: 'braces', label: 'Cross Braces', capacity: 300, inUse: true },
-    { id: 'extensions', kind: 'steelStillage', contents: 'extensions', label: 'Frame Extensions', capacity: 300, inUse: usesExtension },
-    { id: 'propInners', kind: 'steelStillage', contents: 'propInners', label: 'Prop Inners', capacity: 60, inUse: isPropInner },
-    { id: 'flatJacks', kind: 'heavyCage', contents: 'flatJacks', label: 'Flat Jacks', capacity: 80, inUse: !isPropInner },
-    { id: 'uHeads', kind: 'heavyCage', contents: 'uHeads', label: 'U-Heads', capacity: 65, inUse: true },
+    { id: 'braces', kind: 'steelStillage', contents: 'braces', label: 'Cross Braces', capacity: 300, quantity: BAY_QUANTITIES.crossBracesPerLevel * levels, inUse: true },
+    { id: 'extensions', kind: 'steelStillage', contents: 'extensions', label: 'Frame Extensions', capacity: 300, quantity: legs, inUse: usesExtension },
+    { id: 'propInners', kind: 'steelStillage', contents: 'propInners', label: 'Prop Inners', capacity: 60, quantity: legs, inUse: isPropInner },
+    { id: 'flatJacks', kind: 'heavyCage', contents: 'flatJacks', label: 'Flat Jacks', capacity: 80, quantity: legs, inUse: !isPropInner },
+    { id: 'uHeads', kind: 'heavyCage', contents: 'uHeads', label: 'U-Heads', capacity: 65, quantity: legs, inUse: true },
     // Timber (LVL bearers/joists + Form-Ply) is intentionally NOT stored in the yard for now —
     // we are focusing on the frame components. `capacity` above is the per-container maximum each
     // storage type holds (kept for reference; not shown in the UI).

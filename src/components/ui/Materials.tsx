@@ -67,7 +67,9 @@ export function Materials() {
             ) : null}
           </div>
 
-          {sections.map((section) => (
+          {sections
+            .filter((section) => section.title !== 'Timber deck (indicative)')
+            .map((section) => (
             <div key={section.title} className="bom-section">
               <div className="bom-section-title">{section.title}</div>
               {section.items.map((item, i) => (
