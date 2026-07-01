@@ -5,7 +5,17 @@ import { CONFIG_BY_ID } from '../logic/configurations';
 const get = () => useFormworkStore.getState();
 
 beforeEach(() => {
-  // Reset to a known baseline: thin 200mm slab, 2800mm soffit.
+  // Reset to a known baseline: Inputs mode, no custom build / saved workspaces,
+  // thin 200mm slab, 2800mm soffit, Build view.
+  useFormworkStore.setState({
+    panelMode: 'inputs',
+    viewMode: 'assembled',
+    customFrames: [null, null, null],
+    customRocket: 'none',
+    customBaseType: 'flatJack',
+    savedInputs: null,
+    savedCustom: null,
+  });
   get().setSlabThickness(200);
   get().setSlabHeight(2800);
 });
@@ -107,6 +117,135 @@ describe('store: renders adjusted to the target soffit (every entry path)', () =
     expect(get().hasValidOption).toBe(false);
     expect(Number.isFinite(get().currentHeight)).toBe(true);
     expect(get().currentHeight).toBe(get().range.max); // closest reachable below an unreachable target
+  });
+});
+
+describe('store: custom build panel', () => {
+  it('switching to custom with no frame leaves the tower hidden and range empty', () => {
+    get().setPanelMode('custom');
+    expect(get().panelMode).toBe('custom');
+    expect(get().towerVisible).toBe(false);
+    expect(get().range.max).toBe(0);
+  });
+
+  it('picking a bottom frame completes the build, seated at the range minimum', () => {
+    get().setPanelMode('custom');
+    get().setCustomSlot(0, '6ft');
+    expect(get().towerVisible).toBe(true);
+    expect(get().config.frames).toEqual(['6ft']);
+    expect(get().config.baseType).toBe('flatJack'); // base defaults
+    expect(get().config.rocket).toBe('none'); // extension defaults
+    expect(get().currentHeight).toBe(get().range.min); // jacks seated at min
+  });
+
+  it('enforces non-increasing slots and clears now-illegal frames above', () => {
+    get().setPanelMode('custom');
+    get().setCustomSlot(0, '6ft');
+    get().setCustomSlot(1, '6ft');
+    get().setCustomSlot(2, '5ft');
+    expect(get().config.frames).toEqual(['6ft', '6ft', '5ft']);
+    get().setCustomSlot(0, '4ft'); // 6ft/5ft above are no longer legal
+    expect(get().config.frames).toEqual(['4ft']);
+    expect(get().customFrames).toEqual(['4ft', null, null]);
+  });
+
+  it('coerces extension + prop inner off a double', () => {
+    get().setPanelMode('custom');
+    get().setCustomSlot(0, '6ft');
+    get().setCustomRocket('500mm');
+    get().setCustomBaseType('propInner');
+    expect(get().config.rocket).toBe('500mm');
+    expect(get().config.baseType).toBe('propInner');
+    get().setCustomSlot(1, '5ft'); // now a double
+    expect(get().config.frames).toEqual(['6ft', '5ft']);
+    expect(get().config.rocket).toBe('none'); // extension coerced off
+    expect(get().config.baseType).toBe('flatJack'); // prop inner coerced off
+  });
+
+  it('coerces prop inner off when the slab turns thick', () => {
+    get().setPanelMode('custom');
+    get().setCustomSlot(0, '6ft');
+    get().setCustomBaseType('propInner');
+    expect(get().config.baseType).toBe('propInner'); // single + thin: allowed
+    get().setSlabThickness(250); // thick
+    expect(get().config.baseType).toBe('flatJack');
+  });
+
+  it('custom jacks are draggable and clamp to the custom range', () => {
+    get().setPanelMode('custom');
+    get().setCustomSlot(0, '6ft');
+    get().setUHeadExtension(99999); // clamps to uHeadMax
+    expect(get().uHeadExtension).toBe(get().range.uHeadMax);
+    get().setBaseExtension(99999); // clamps to baseMax
+    expect(get().baseExtension).toBe(get().range.baseMax);
+    expect(get().currentHeight).toBe(get().range.max); // both jacks maxed → top of range
+  });
+
+  it('round-trip inputs → custom → inputs restores the inputs workspace verbatim', () => {
+    get().setSlabHeight(3500);
+    get().setConfig(CONFIG_BY_ID['s-7ft-pi']); // an "Other" pick
+    expect(get().config.id).toBe('s-7ft-pi');
+    const dialled = get().currentHeight;
+
+    get().setPanelMode('custom');
+    get().setCustomSlot(0, '5ft');
+    expect(get().config.frames).toEqual(['5ft']);
+
+    get().setPanelMode('inputs');
+    expect(get().panelMode).toBe('inputs');
+    expect(get().config.id).toBe('s-7ft-pi'); // restored
+    expect(get().slabHeight).toBe(3500);
+    expect(get().currentHeight).toBe(dialled); // exact state preserved
+    expect(get().towerVisible).toBe(true);
+  });
+
+  it('slab thickness is INDEPENDENT per panel', () => {
+    get().setSlabThickness(260); // inputs: thick
+    expect(get().slabThickness).toBe(260);
+
+    get().setPanelMode('custom');
+    expect(get().slabThickness).toBe(200); // custom keeps its own default, unaffected
+    get().setSlabThickness(150);
+    expect(get().slabThickness).toBe(150);
+
+    get().setPanelMode('inputs');
+    expect(get().slabThickness).toBe(260); // inputs unchanged by custom
+
+    get().setPanelMode('custom');
+    expect(get().slabThickness).toBe(150); // custom restored
+  });
+
+  it('view mode is INDEPENDENT per panel', () => {
+    get().setViewMode('exploded');
+    get().setPanelMode('custom');
+    expect(get().viewMode).toBe('assembled'); // custom default view
+
+    get().setViewMode('packed');
+    get().setPanelMode('inputs');
+    expect(get().viewMode).toBe('exploded'); // inputs restored
+
+    get().setPanelMode('custom');
+    expect(get().viewMode).toBe('packed'); // custom restored
+  });
+
+  it('a completed custom build is restored on switch-back', () => {
+    get().setPanelMode('custom');
+    get().setCustomSlot(0, '5ft');
+    get().setCustomSlot(1, '5ft');
+    expect(get().config.frames).toEqual(['5ft', '5ft']);
+    get().setPanelMode('inputs');
+    get().setPanelMode('custom');
+    expect(get().towerVisible).toBe(true);
+    expect(get().config.frames).toEqual(['5ft', '5ft']); // rebuilt from persisted slots
+  });
+
+  it('setConfig / setSlabHeight are no-ops while in custom mode', () => {
+    get().setPanelMode('custom');
+    get().setCustomSlot(0, '6ft');
+    const before = get().config.id;
+    get().setConfig(CONFIG_BY_ID['s-3ft-fj']);
+    get().setSlabHeight(9000);
+    expect(get().config.id).toBe(before);
   });
 });
 

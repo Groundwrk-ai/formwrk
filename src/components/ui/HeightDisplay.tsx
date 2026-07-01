@@ -11,6 +11,8 @@ import { useFormworkStore } from '../../store/formworkStore';
 
 const mm = (v: number) => `${Math.round(v)} mm`;
 const pct = (v: number) => `${Math.max(0, Math.min(100, v * 100)).toFixed(1)}%`;
+/** Bracketed, italicised amount Min/Max sits below/above Current (rendered via .variance). */
+const varLabel = (delta: number, sign: '−' | '+') => (delta <= 0 ? '(0 mm)' : `(${sign}${delta} mm)`);
 
 export function HeightDisplay() {
   const range = useFormworkStore((s) => s.range);
@@ -24,6 +26,8 @@ export function HeightDisplay() {
   const currentPos = (currentHeight - range.min) / span;
   const targetPos = (slabHeight - range.min) / span;
   const delta = slabHeight - currentHeight;
+  const belowMin = Math.round(currentHeight - range.min);
+  const aboveMax = Math.round(range.max - currentHeight);
 
   let verdictClass: 'ok' | 'bad' | 'warn';
   let verdictText: string;
@@ -47,11 +51,11 @@ export function HeightDisplay() {
 
       <div className="metric">
         <span className="k">Min</span>
-        <span className="v">{mm(range.min)}</span>
+        <span className="v"><span className="variance">{varLabel(belowMin, '−')}</span>{mm(range.min)}</span>
       </div>
       <div className="metric">
         <span className="k">Max</span>
-        <span className="v">{mm(range.max)}</span>
+        <span className="v"><span className="variance">{varLabel(aboveMax, '+')}</span>{mm(range.max)}</span>
       </div>
 
       <div className="track" role="img" aria-label="serviceable range">
@@ -64,12 +68,12 @@ export function HeightDisplay() {
       </div>
 
       <div className="metric big">
-        <span className="k">Your height</span>
-        <span className="v">{mm(slabHeight)}</span>
-      </div>
-      <div className="metric">
         <span className="k">Current</span>
         <span className="v">{mm(currentHeight)}</span>
+      </div>
+      <div className="metric">
+        <span className="k">Input height</span>
+        <span className="v">{mm(slabHeight)}</span>
       </div>
 
       <div className={`verdict ${verdictClass}`}>{verdictText}</div>

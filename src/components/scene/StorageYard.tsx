@@ -407,6 +407,7 @@ function Container({ c }: { c: YardContainer }) {
 export function StorageYard() {
   const config = useFormworkStore((s) => s.config);
   const viewMode = useFormworkStore((s) => s.viewMode);
+  const towerVisible = useFormworkStore((s) => s.towerVisible);
   const { driver } = useTransition();
   const groupRef = useRef<Group>(null);
 
@@ -442,7 +443,7 @@ export function StorageYard() {
     });
   });
 
-  if (!mounted) return null;
+  if (!mounted || !towerVisible) return null; // no yard while a custom build is incomplete
 
   return (
     <group ref={groupRef}>

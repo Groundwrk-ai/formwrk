@@ -137,6 +137,14 @@
   font-size: 26px;
   font-weight: 700;
 }
+.variance {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-dim);
+  margin-right: 6px;
+}
 
 .track {
   position: relative;
@@ -318,6 +326,61 @@
 }
 .revert:hover {
   text-decoration: underline;
+}
+
+/* Custom panel — frame slots + option chips */
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 3px 0;
+}
+.slot-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chip {
+  padding: 6px 11px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.chip:hover:not(:disabled):not(.active) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.chip:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.bom-hint {
+  font-size: 11px;
+  color: var(--warn);
+  margin-top: 2px;
+}
+.custom-note {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  padding: 4px 2px;
 }
 
 /* Config list (Other tab) */

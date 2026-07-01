@@ -20,6 +20,7 @@ import { HFrame } from './HFrame';
 import { Tube, Box, DIMS, COLORS } from './primitives';
 import { useVerticalDrag, type VerticalDragHandlers } from './useVerticalDrag';
 import { ThreadedRod, WingNut, PinnedTube, Pin, Extension } from './jackParts';
+import { PlyDeck } from './FormPly';
 import { BAY_QUANTITIES } from '../../logic/bayLayout';
 import { PosedPart, GhostController, useTransition, sampleWeights } from './transition';
 
@@ -130,11 +131,16 @@ function UHead({ seg, x, z, drag, interactive }: { seg: Segment; x: number; z: n
   );
 }
 
-/** Ghost soffit plane — the target slab underside. Only present in the assembled view. */
-function SoffitPlane({ y, meetsTarget }: { y: number; meetsTarget: boolean }) {
+/**
+ * Ghost target slab — a translucent block sitting on the target soffit, rendered at the
+ * slab's ACTUAL thickness (its underside at `y` = floor-to-soffit, extruded up by the slab
+ * thickness). Only present in the assembled view. Same colour/opacity as before.
+ */
+function SlabGhost({ y, thickness, meetsTarget }: { y: number; thickness: number; meetsTarget: boolean }) {
   const { driver } = useTransition();
   const matRef = useRef<MeshStandardMaterial>(null);
   const edgeRef = useRef<LineBasicMaterial>(null);
+  const h = Math.max(0.01, thickness / 1000); // mm -> m (guard against a 0 slab)
   useFrame(() => {
     const w = sampleWeights(driver.current);
     const visible = 1 - Math.max(w.explode, w.ghost); // only present in the assembled view
@@ -142,9 +148,9 @@ function SoffitPlane({ y, meetsTarget }: { y: number; meetsTarget: boolean }) {
     if (edgeRef.current) edgeRef.current.opacity = visible;
   });
   return (
-    <mesh position={[0, y, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-      <planeGeometry args={[DIMS.joistSpan + 0.4, DIMS.bearerSpan + 0.4]} />
-      <meshStandardMaterial ref={matRef} color={meetsTarget ? COLORS.valid : COLORS.accent} transparent opacity={0.22} metalness={0} roughness={1} side={2} />
+    <mesh position={[0, y + h / 2, 0]}>
+      <boxGeometry args={[DIMS.joistSpan + 0.4, h, DIMS.bearerSpan + 0.4]} />
+      <meshStandardMaterial ref={matRef} color={meetsTarget ? COLORS.valid : COLORS.accent} transparent opacity={0.22} metalness={0} roughness={1} depthWrite={false} />
       <Edges threshold={15}>
         <lineBasicMaterial ref={edgeRef} color={meetsTarget ? COLORS.valid : '#6bb0ee'} transparent />
       </Edges>
@@ -161,14 +167,20 @@ export function Tower() {
   const uHeadExtension = useFormworkStore((s) => s.uHeadExtension);
   const baseExtension = useFormworkStore((s) => s.baseExtension);
   const slabHeight = useFormworkStore((s) => s.slabHeight);
+  const slabThickness = useFormworkStore((s) => s.slabThickness);
   const meetsTarget = useFormworkStore((s) => s.meetsTarget);
   const range = useFormworkStore((s) => s.range);
   const viewMode = useFormworkStore((s) => s.viewMode);
+  const panelMode = useFormworkStore((s) => s.panelMode);
+  const towerVisible = useFormworkStore((s) => s.towerVisible);
   const setUHeadExtension = useFormworkStore((s) => s.setUHeadExtension);
   const setBaseExtension = useFormworkStore((s) => s.setBaseExtension);
 
   const interactive = viewMode === 'assembled';
-  const showLabels = viewMode === 'exploded';
+  // Gate labels on towerVisible too: the exploded <Tag>s are drei <Html> DOM, which does
+  // NOT respect the outer group's visible=false — so a hidden (incomplete Custom) tower
+  // would otherwise leave stale component labels floating over the empty stage.
+  const showLabels = towerVisible && viewMode === 'exploded';
 
   const uHeadDrag = useVerticalDrag({
     getStart: () => useFormworkStore.getState().uHeadExtension,
@@ -226,7 +238,10 @@ export function Tower() {
   const timberRef = useRef<Group>(null);
 
   return (
-    <group>
+    // Hidden while a Custom build is incomplete (no bottom frame chosen yet) — the
+    // stage stays empty rather than rendering a half-built tower. `visible=false` also
+    // drops the group from raycasting, so the screwjack grab-handles go inert.
+    <group visible={towerVisible}>
       <group ref={frameRef}>
         {/* 1) base jacks */}
         <PosedPart stage={baseStage} maxStage={maxStage} explode={lift(baseStage)}>
@@ -310,15 +325,16 @@ export function Tower() {
           ))}
         </PosedPart>
 
-        {/* 8) ply slides over the joists */}
+        {/* 8) Form-Ply deck slides over the joists (phenolic-faced, branded) */}
         <PosedPart stage={plyStage} maxStage={maxStage} explode={lift(plyStage)}>
-          <Box position={[0, layout.ply.bottom + layout.ply.height / 2, 0]} size={[DIMS.joistSpan + 0.08, layout.ply.height, DIMS.bearerSpan + 0.08]} color={COLORS.ply} />
+          <PlyDeck position={[0, layout.ply.bottom + layout.ply.height / 2, 0]} size={[DIMS.joistSpan + 0.08, layout.ply.height, DIMS.bearerSpan + 0.08]} />
         </PosedPart>
       </group>
 
       <GhostController groupRef={frameRef} />
       <GhostController groupRef={timberRef} minOpacity={0} />
-      <SoffitPlane y={layout.soffitY} meetsTarget={meetsTarget} />
+      {/* The target slab only makes sense in Inputs mode; Custom has no target. */}
+      {panelMode === 'inputs' && <SlabGhost y={layout.soffitY} thickness={slabThickness} meetsTarget={meetsTarget} />}
     </group>
   );
 }
