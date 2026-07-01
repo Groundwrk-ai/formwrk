@@ -82,7 +82,7 @@ const STAGGER = 0.42;
 /** Extra drop (metres) parts fall through as they settle into the assembled pose. */
 const DROP = 0.28;
 /** How translucent tower materials become when fully ghosted. */
-export const GHOST_OPACITY = 0.13;
+export const GHOST_OPACITY = 0.32; // alpha-hash stipple density for the ghost
 
 const TransitionCtx = createContext<{ driver: MutableRefObject<Driver> } | null>(null);
 
@@ -190,6 +190,7 @@ export function GhostController({
     // When a group fades all the way out (timber in Pack), hide it outright so it
     // can't read as a solid slab; otherwise keep it visible at the eased opacity.
     root.visible = !active || opacity > 0.02;
+    const toggled = active !== wasActive.current; // alpha-hash flips → recompile once
     root.traverse((obj) => {
       const mat = (obj as Mesh).material as Material | Material[] | undefined;
       if (!mat) return;
@@ -204,13 +205,17 @@ export function GhostController({
           ud.gRough = mm.roughness;
           ud.gEnv = mm.envMapIntensity;
         }
-        mm.transparent = active;
+        // Order-independent transparency: render the ghost in the OPAQUE pass with
+        // alpha-to-coverage, so each pixel shows exactly ONE surface (depth-tested) —
+        // no stacked-alpha where tubes overlap. Uses the canvas MSAA samples, so it's
+        // smoother than a 1-bit alpha hash. `opacity` becomes the coverage.
+        mm.alphaToCoverage = active;
+        mm.transparent = false;
         mm.opacity = active ? opacity : 1;
-        // Keep depth-writing ON while ghosted so the frame occludes itself (no
-        // stacked-alpha patches), AND flatten to matte as it ghosts so metallic
-        // highlights / reflections don't make some tubes read "solid" — the ghost
-        // stays one even translucent shell.
         mm.depthWrite = true;
+        if (toggled) mm.needsUpdate = true;
+        // Flatten to matte as it ghosts so metallic highlights / reflections don't
+        // make some tubes read "solid" — the ghost stays one even shell.
         mm.metalness = lerp(ud.gMet ?? 0, 0, ghost);
         mm.roughness = lerp(ud.gRough ?? 1, 1, ghost);
         mm.envMapIntensity = lerp(ud.gEnv ?? 1, 0, ghost);
